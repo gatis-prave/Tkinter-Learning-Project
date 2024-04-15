@@ -126,7 +126,7 @@ class Tile(ctk.CTkFrame):
 
     @classmethod
     def create_file_test(cls):
-        selected_tile = cls.find_tile(cMenuX.get(), cMenuY.get(), currentDesktop)
+        selected_tile = cls.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get(), currentDesktop)
         if selected_tile.empty:
             selected_tile.label.pack_forget()
             selected_tile.icon_label.pack(expand=True, fill='both', padx=5, pady=3)
@@ -135,7 +135,7 @@ class Tile(ctk.CTkFrame):
 
     @classmethod
     def delete_file(cls):
-        selected_tile = cls.find_tile(cMenuX.get(), cMenuY.get(), currentDesktop)
+        selected_tile = cls.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get(), currentDesktop)
         if not selected_tile.empty:
             selected_tile.icon_label.pack_forget()
             selected_tile.name_label.pack_forget()
@@ -147,22 +147,35 @@ Tile.create_tiles(desktopMed.columns, desktopMed.rows - 1, desktopMed)
 Tile.create_tiles(desktopLrg.columns, desktopLrg.rows - 1, desktopLrg)
 
 # Context Menu
-def context_menu(event):
-    try:
-        cMenuX.set(event.x_root)
-        cMenuY.set(event.y_root)
-        contextMenu.tk_popup(event.x_root, event.y_root)
-    finally:
-        contextMenu.grab_release()
+class ContextMenu(tk.Menu):
+    def __init__(self):
+        super().__init__(deskWindow, tearoff=0)
+        self.add_command(label='New File', command=Tile.create_file_test)
+        self.add_command(label='Delete', command=Tile.delete_file)
+    cMenuX = tk.IntVar(value=0)
+    cMenuY = tk.IntVar(value=0)
+    @classmethod
+    def get_widget_under_cursor(cls, event):
+        # Get the x, y coordinates of the mouse pointer relative to the root window
+        print('get widget event triggered')
+        cls.cMenuX.set(event.x_root)
+        cls.cMenuY.set(event.y_root)
 
+        # Find the widget under the mouse pointer
+        widget = event.widget.winfo_containing(cls.cMenuX.get(), cls.cMenuY.get())
 
-contextMenu = tk.Menu(deskWindow, tearoff=0)
-cMenuX = tk.IntVar(value=0)
-cMenuY = tk.IntVar(value=0)
-contextMenu.add_command(label='New File', command=Tile.create_file_test)
-contextMenu.add_command(label='Delete', command=Tile.delete_file)
+        print(widget)
+    @classmethod
+    def open_menu(cls, event):
+        try:
+            contextMenu.tk_popup(cls.cMenuX.get(), cls.cMenuY.get())
+        finally:
+            contextMenu.grab_release()
 
-deskWindow.bind('<Button-3>', context_menu)
+contextMenu = ContextMenu()
+
+deskWindow.bind('<Button-3>', contextMenu.get_widget_under_cursor)
+deskWindow.bind('<ButtonRelease-3>', contextMenu.open_menu)
 
 # Taskbar
 taskbar = ctk.CTkFrame(master=deskWindow,
@@ -236,7 +249,6 @@ shutDownButton.place(relx=0.05, rely=0.95, anchor='sw')
 startMenu.lower()
 
 # Debug menu and button
-
 class Debug(ctk.CTkFrame):
     def __init__(self):
         super().__init__(deskWindow)
