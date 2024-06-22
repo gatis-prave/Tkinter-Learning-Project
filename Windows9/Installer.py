@@ -82,17 +82,31 @@ buttonFrame.place(x=installerWidth - 15, y=installerHeight - 15, anchor='se')
 
 
 # Install button
+
+errorText = tk.StringVar(master=frame1)
+error = ctk.CTkLabel(master=frame1, textvariable=errorText, justify='center')
+errorY = installerHeight - 20
+error.place(relx=0.5, y=errorY, anchor='center')
+error.lower()
+
 def install_func():
-    print('\nInstaller settings')
     editions_string = editionsString.get()
-    if editions_string == 'Choose edition':
-        editionsString.set('Windows 9 Retarded')
-    print(f'Edition: {editions_string}')
     username_string = usernameString.get().strip(',./;: ')
-    if username_string == '':
-        usernameString.set('Retard')
-    print(f'Username: {username_string}')
-    installer.destroy()
+
+    if editions_string == 'Choose edition' and username_string == '':
+        errorText.set('Please choose an edition and enter your username')
+        error.lift()
+    elif editions_string == 'Choose edition':
+        errorText.set('Please choose an edition')
+        error.lift()
+    elif username_string == '':
+        errorText.set('Please enter your username')
+        error.lift()
+    else:
+        print('\nInstaller settings')
+        print(f'Edition: {editions_string}')
+        print(f'Username: {username_string}')
+        installer.destroy()
 
 
 installButton = ctk.CTkButton(master=buttonFrame,
