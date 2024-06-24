@@ -1,11 +1,11 @@
 import tkinter as tk
 import customtkinter as ctk
 from platform import system, release
-from os import getlogin
+import os
 from darkdetect import isDark
 from random import choice
 
-# Installer
+
 # Window setup
 installer = ctk.CTk()
 screenWidth = installer.winfo_screenwidth()
@@ -106,6 +106,32 @@ def install_func():
         print('\nInstaller settings')
         print(f'Edition: {editions_string}')
         print(f'Username: {username_string}')
+
+        if not os.path.exists('System33'):
+            os.makedirs('System33')
+        os.chdir('System33')
+
+        if not os.path.exists('Users'):
+            os.makedirs('Users')
+        os.chdir('Users')
+
+        if not os.path.exists(f'{username_string}'):
+            os.makedirs(f'{username_string}')
+        os.chdir(f'{username_string}')
+
+        if not os.path.exists('Files'):
+            os.makedirs('Files')
+
+        with open('sysinfo.txt', 'w') as sysinfo:
+            sysinfo.write(f'Screen width:{screenWidth}')
+            sysinfo.write(f'\nScreen height:{screenHeight}')
+            sysinfo.write(f'\nOld OS:{currentOS}')
+            sysinfo.write(f'\nEdition:{editions_string}')
+            sysinfo.write(f'\nUsername:{username_string}')
+
+        with open('settings.txt', 'w') as settings:
+            settings.write(f'Dark mode: {darkModeVar.get()}')
+
         installer.destroy()
 
 
@@ -120,15 +146,14 @@ installButton.pack(side='right', padx=5)
 
 # Lazy button
 def lazy_func():
-    random_edition = choice(editions)
-    editionsString.set(random_edition)
-    usernameString.set(getlogin())
+    editionsString.set(choice(editions))
+    usernameString.set(os.getlogin())
     darkModeVar.set(True)
     ctk.set_appearance_mode('dark')
 
 
 lazyButton = ctk.CTkButton(master=buttonFrame,
-                           text='I don\'t care',
+                           text='I\'m lazy',
                            width=buttonWidth,
                            height=buttonHeight,
                            command=lazy_func)

@@ -1,18 +1,41 @@
+import os
 import tkinter as tk
 import customtkinter as ctk
 from time import strftime
 from random import choice
-# import Installer
-#
-# screenWidth = Installer.screenWidth
-# screenHeight = Installer.screenHeight
-# edition = Installer.editionsString.get()
-# username = Installer.usernameString.get()
 
-screenWidth = 1920
-screenHeight = 1080
-edition = 'Windows 9 Developer'
-username = 'User 1'
+# Check if system files exist
+if not os.path.exists('System33'):
+    print('Windows 9 is not installed! Please run the installer!')
+    exit()
+
+# Switch to the user directory
+currentDir = r'System33\Users'
+os.chdir(currentDir)
+currentDir = str(os.getcwd()) + '\\' + str(os.listdir()).strip('[]\'')
+os.chdir(currentDir)
+
+# Get system info
+with open('sysinfo.txt', 'r') as sysinfo:
+    sysContent = sysinfo.readlines()
+    print(sysContent)
+    screenWidth = int(sysContent[0].replace('Screen width:', '').replace('\n', ''))
+    screenHeight = int(sysContent[1].replace('Screen height:', '').replace('\n', ''))
+    edition = sysContent[3].replace('Edition:', '').replace('\n', '')
+    username = sysContent[4].replace('Username:', '').replace('\n', '')
+
+    print('System info')
+    print(f'Screen width: {screenWidth}')
+    print(f'Screen height: {screenHeight}')
+    print(f'Edition: {edition}')
+    print(f'Username: {username}')
+
+# Get settings
+with open('settings.txt', 'r') as settings:
+    darkMode = bool(settings.readline().replace('Dark mode: ', ''))
+
+    print('\nSettings')
+    print(f'Dark mode: {darkMode}')
 
 class NewWindow(ctk.CTkToplevel):  # The window always minimizes on creation for some reason
     def __init__(self, window_title, width, height, min_width, min_height):
@@ -58,9 +81,14 @@ class Desktop(ctk.CTkFrame):
 
         self.tiles = []
 
+    currentDesktop = None
+
 desktopSml = Desktop(28, 17)
 desktopMed = Desktop(24, 15)
 desktopLrg = Desktop(20, 13)
+
+Desktop.currentDesktop = desktopMed
+Desktop.currentDesktop.lift()
 
 class Tile(ctk.CTkFrame):
     def __init__(self, tile_column, tile_row, parent):
@@ -99,7 +127,7 @@ class Tile(ctk.CTkFrame):
 
     @classmethod
     def refresh_tiles(cls):
-        for row in debugMenu.currentDesktop.tiles:
+        for row in Desktop.currentDesktop.tiles:
             for tile in row:
                 tile = tile[0]
                 if not tile.empty:
@@ -127,8 +155,12 @@ class Tile(ctk.CTkFrame):
         return desktop.tiles[tile_column][tile_row][0]
 
     @classmethod
+    def create_text_file(cls):
+        selected_tile = cls.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get(), Desktop.currentDesktop)
+        pass
+    @classmethod
     def create_file_test(cls):
-        selected_tile = cls.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get(), debugMenu.currentDesktop)
+        selected_tile = cls.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get(), Desktop.currentDesktop)
         if selected_tile.empty:
             selected_tile.label.pack_forget()
             selected_tile.icon_label.pack(expand=True, fill='both', padx=5, pady=3)
@@ -137,7 +169,7 @@ class Tile(ctk.CTkFrame):
 
     @classmethod
     def delete_file(cls):
-        selected_tile = cls.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get(), debugMenu.currentDesktop)
+        selected_tile = cls.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get(), Desktop.currentDesktop)
         if not selected_tile.empty:
             selected_tile.icon_label.pack_forget()
             selected_tile.name_label.pack_forget()
@@ -230,6 +262,8 @@ def open_settings():
 def task_manager():
     print('Opened Task Manager')
 
+
+# noinspection PyUnusedLocal
 class ContextMenu(tk.Menu):
     def __init__(self):
         super().__init__(deskWindow, tearoff=0)
@@ -283,6 +317,7 @@ deskWindow.bind('<Button-3>', contextMenu.select_widget)
 deskWindow.bind('<ButtonRelease-3>', contextMenu.open_menu)
 
 # Debug menu and button
+# noinspection PyUnusedLocal
 class Debug(ctk.CTkFrame):
     def __init__(self):
         super().__init__(deskWindow)
@@ -310,8 +345,6 @@ class Debug(ctk.CTkFrame):
         self.taskbarCheck.pack(side='top', padx=5, pady=5)
 
         self.iconSizeVar = tk.IntVar(value=1)
-        self.currentDesktop = desktopMed
-        self.currentDesktop.lift()
         taskbarWid.lift()
 
         self.iconSizeFrame = ctk.CTkFrame(master=self)
@@ -370,7 +403,7 @@ class Debug(ctk.CTkFrame):
                 startMenu.lift()
             if debugMenu.enabled:
                 debugMenu.lift()
-            self.currentDesktop = desktopSml
+            Desktop.currentDesktop = desktopSml
         elif self.iconSizeVar.get() == 1:
             desktopMed.lift()
             taskbarWid.lift()
@@ -378,7 +411,7 @@ class Debug(ctk.CTkFrame):
                 startMenu.lift()
             if debugMenu.enabled:
                 debugMenu.lift()
-            self.currentDesktop = desktopMed
+            Desktop.currentDesktop = desktopMed
         else:
             desktopLrg.lift()
             taskbarWid.lift()
@@ -386,8 +419,8 @@ class Debug(ctk.CTkFrame):
                 startMenu.lift()
             if debugMenu.enabled:
                 debugMenu.lift()
-            self.currentDesktop = desktopLrg
-        print(f'\nDesktop info:\nCurrent desktop: {self.currentDesktop}')
+            Desktop.currentDesktop = desktopLrg
+        print(f'\nDesktop info:\nCurrent desktop: {Desktop.currentDesktop}')
 
     @staticmethod
     def open_terminal():

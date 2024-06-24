@@ -1,0 +1,5 @@
+Screen width:1920
+Screen height:1080
+Old OS:Windows 11
+Edition:Windows 9 Pro+
+Username:Ga4a
