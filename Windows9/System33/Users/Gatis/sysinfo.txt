@@ -1,0 +1,5 @@
+Screen width:2880
+Screen height:1800
+Old OS:Windows 11
+Edition:Windows 9 Pro+
+Username:Gatis

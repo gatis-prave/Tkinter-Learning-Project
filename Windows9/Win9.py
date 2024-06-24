@@ -1,13 +1,19 @@
 import os
+import ctypes
 import tkinter as tk
 import customtkinter as ctk
 from time import strftime
 from random import choice
 
+
+ctypes.windll.shcore.SetProcessDpiAwareness(2)
+
 # Check if system files exist
 if not os.path.exists('System33'):
     print('Windows 9 is not installed! Please run the installer!')
     exit()
+
+rootDir = f'{os.getcwd()}\\System33'
 
 # Switch to the user directory
 currentDir = r'System33\Users'
@@ -17,12 +23,11 @@ os.chdir(currentDir)
 
 # Get system info
 with open('sysinfo.txt', 'r') as sysinfo:
-    sysContent = sysinfo.readlines()
-    print(sysContent)
-    screenWidth = int(sysContent[0].replace('Screen width:', '').replace('\n', ''))
-    screenHeight = int(sysContent[1].replace('Screen height:', '').replace('\n', ''))
-    edition = sysContent[3].replace('Edition:', '').replace('\n', '')
-    username = sysContent[4].replace('Username:', '').replace('\n', '')
+    sysInfo = sysinfo.readlines()
+    screenWidth = int(sysInfo[0].replace('Screen width:', '').replace('\n', ''))
+    screenHeight = int(sysInfo[1].replace('Screen height:', '').replace('\n', ''))
+    edition = sysInfo[3].replace('Edition:', '').replace('\n', '')
+    username = sysInfo[4].replace('Username:', '').replace('\n', '')
 
     print('System info')
     print(f'Screen width: {screenWidth}')
@@ -36,6 +41,8 @@ with open('settings.txt', 'r') as settings:
 
     print('\nSettings')
     print(f'Dark mode: {darkMode}')
+
+os.chdir(f'{rootDir}')
 
 class NewWindow(ctk.CTkToplevel):  # The window always minimizes on creation for some reason
     def __init__(self, window_title, width, height, min_width, min_height):
@@ -69,20 +76,19 @@ class Desktop(ctk.CTkFrame):
         column_list = []
         column_list = update_list(self.columns, column_list)
         self.columnSize = int(screenWidth / self.columns)
-        print(f'\nSmall column size: {self.columnSize}')
         self.columnconfigure(column_list, weight=1, uniform='a')
 
         self.rows = row_count
         row_list = []
         row_list = update_list(self.rows, row_list)
         self.rowSize = int(screenHeight / self.rows)
-        print(f'Small row size: {self.rowSize}')
         self.rowconfigure(row_list, weight=1, uniform='a')
 
         self.tiles = []
 
     currentDesktop = None
 
+print('\nLoading desktop...')
 desktopSml = Desktop(28, 17)
 desktopMed = Desktop(24, 15)
 desktopLrg = Desktop(20, 13)
@@ -93,12 +99,15 @@ Desktop.currentDesktop.lift()
 class Tile(ctk.CTkFrame):
     def __init__(self, tile_column, tile_row, parent):
         super().__init__(master=parent)
+        self.column = tile_column
+        self.row = tile_row
         self.name = f'Tile-{tile_column}:{tile_row}'
         self.empty = True
 
-        self.label_text = f'C:{tile_column}, R:{tile_row}'
+        self.label_text = ''
+        # self.label_text = f'C:{tile_column}, R:{tile_row}'
         self.label = ctk.CTkLabel(self, text=self.label_text)
-        self.label.pack(expand=True, fill='both')
+        self.label.pack(expand=True, fill='both', padx=1, pady=1)
 
         rand_col = choice(('red', 'green', 'blue'))
         self.icon_label = ctk.CTkLabel(self, text="Icon", fg_color=rand_col)
@@ -106,6 +115,8 @@ class Tile(ctk.CTkFrame):
         self.name_label = ctk.CTkLabel(self, text=rand_name)
 
         self.grid(row=tile_row, column=tile_column, sticky='nsew')
+
+    selected_tile = None
 
     def __str__(self):
         return self.name
@@ -121,9 +132,9 @@ class Tile(ctk.CTkFrame):
                 tile_column += 1
             tile_column = 0
             tile_row += 1
-        print('\n')
-        for row in parent.tiles:
-            print(row)
+        # print('\n')
+        # for row in parent.tiles:
+        #     print(row)
 
     @classmethod
     def refresh_tiles(cls):
@@ -154,29 +165,82 @@ class Tile(ctk.CTkFrame):
         print(f'Row: {tile_row}')
         return desktop.tiles[tile_column][tile_row][0]
 
+    @staticmethod
+    def load_files():
+        print('\nLoading files...')
+        os.chdir(f'{rootDir}\\Users\\{username}\\Files')
+        files_found = 0
+        for row in Desktop.currentDesktop.tiles:
+            for tile in row:
+                tile = tile[0]
+                file_name = f'{tile.column}.{tile.row}.txt'
+                file_path = f'{os.getcwd()}\\{file_name}'
+                if os.path.exists(file_path):
+                    print(f'File found: {file_name}')
+                    files_found += 1
+                    tile.empty = False
+                    tile.label.pack_forget()
+
+                    tile.icon_label.configure(text='Txt', fg_color='white', text_color='black')
+                    tile.name_label.configure(text='New Text Document', justify='center')
+                    tile.icon_label.pack(expand=True, fill='both', padx=18, pady=3)
+                    tile.name_label.pack(padx=5, pady=5)
+        if files_found == 0:
+            print('No files found.')
+        else:
+            print('Done')
+
+    @classmethod
+    def open_file(cls):
+        selected_tile = cls.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get(), Desktop.currentDesktop)
+        os.chdir(f'{rootDir}\\Users\\{username}\\Files')
+        file_name = f'{selected_tile.column}.{selected_tile.row}.txt'
+        file_path = f'{os.getcwd()}\\{file_name}'
+        if os.path.exists(file_path):
+            os.startfile(file_path)
+        os.chdir(rootDir)
+
     @classmethod
     def create_text_file(cls):
         selected_tile = cls.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get(), Desktop.currentDesktop)
-        pass
-    @classmethod
-    def create_file_test(cls):
-        selected_tile = cls.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get(), Desktop.currentDesktop)
-        if selected_tile.empty:
-            selected_tile.label.pack_forget()
-            selected_tile.icon_label.pack(expand=True, fill='both', padx=5, pady=3)
-            selected_tile.name_label.pack()
-            selected_tile.empty = False
+
+        os.chdir(f'{rootDir}\\Users\\{username}\\Files')
+
+        file_name = f'{selected_tile.column}.{selected_tile.row}.txt'
+        with open(file_name, 'w'):
+            pass
+        os.chdir(rootDir)
+
+        selected_tile.empty = False
+        selected_tile.label.pack_forget()
+
+        selected_tile.icon_label.configure(text='Txt', fg_color='white', text_color='black')
+        selected_tile.name_label.configure(text='New Text Document', justify='center')
+        selected_tile.icon_label.pack(expand=True, fill='both', padx=18, pady=3)
+        selected_tile.name_label.pack(padx=5, pady=5)
 
     @classmethod
     def delete_file(cls):
         selected_tile = cls.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get(), Desktop.currentDesktop)
-        if not selected_tile.empty:
-            selected_tile.icon_label.pack_forget()
-            selected_tile.name_label.pack_forget()
-            selected_tile.empty = True
-            selected_tile.label.pack(expand=True, fill='both')
+
+        os.chdir(f'{rootDir}\\Users\\{username}\\Files')
+        file_name = f'{selected_tile.column}.{selected_tile.row}.txt'
+        file_path = f'{os.getcwd()}\\{file_name}'
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        os.chdir(rootDir)
+
+        selected_tile.icon_label.pack_forget()
+        selected_tile.name_label.pack_forget()
+
+        selected_tile.icon_label.pack_forget()
+        selected_tile.name_label.pack_forget()
+        selected_tile.empty = True
+        selected_tile.label.pack(expand=True, fill='both')
 
 [Tile.create_tiles(desktop.columns, desktop.rows - 1, desktop) for desktop in [desktopSml, desktopMed, desktopLrg]]
+print('Done')
+Tile.load_files()
 
 # Taskbar
 class Taskbar(ctk.CTkFrame):
@@ -296,8 +360,12 @@ class ContextMenu(tk.Menu):
     def add_options(self, widget):
         self.delete(0, tk.END)
         if isinstance(widget, Tile):
-            self.add_command(label='New File', command=Tile.create_file_test)
-            self.add_command(label='Delete', command=Tile.delete_file)
+            selected_tile = Tile.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get(), Desktop.currentDesktop)
+            if selected_tile.empty:
+                self.add_command(label='New Text File', command=Tile.create_text_file)
+            else:
+                self.add_command(label='Open File', command=Tile.open_file)
+                self.add_command(label='Delete', command=Tile.delete_file)
         elif isinstance(widget, Taskbar):
             self.add_command(label='Settings', command=open_settings)
             self.add_command(label='Task Manager', command=task_manager)
@@ -317,7 +385,6 @@ deskWindow.bind('<Button-3>', contextMenu.select_widget)
 deskWindow.bind('<ButtonRelease-3>', contextMenu.open_menu)
 
 # Debug menu and button
-# noinspection PyUnusedLocal
 class Debug(ctk.CTkFrame):
     def __init__(self):
         super().__init__(deskWindow)

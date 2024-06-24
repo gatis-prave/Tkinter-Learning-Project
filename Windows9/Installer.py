@@ -1,10 +1,12 @@
 import tkinter as tk
 import customtkinter as ctk
+import ctypes
 from platform import system, release
 import os
 from darkdetect import isDark
 from random import choice
 
+ctypes.windll.shcore.SetProcessDpiAwareness(2)
 
 # Window setup
 installer = ctk.CTk()
@@ -13,8 +15,12 @@ screenHeight = installer.winfo_screenheight()
 installer.title('Windows 9 Installer')
 installerWidth = int(screenWidth * 0.4)
 installerHeight = int(screenHeight * 0.4)
+
+print(f'Installer resolution: {installerWidth}x{installerHeight}')
+
 installer.geometry(f'{installerWidth}x{installerHeight}')
 installer.resizable(False, False)
+
 
 # System information
 currentOS = f'{system()} {release()}'
