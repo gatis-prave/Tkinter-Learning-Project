@@ -1,6 +1,7 @@
 import tkinter as tk
 import customtkinter as ctk
 import ctypes
+import json
 from platform import system, release
 import os
 from darkdetect import isDark
@@ -88,7 +89,6 @@ buttonFrame.place(x=installerWidth - 15, y=installerHeight - 15, anchor='se')
 
 
 # Install button
-
 errorText = tk.StringVar(master=frame1)
 error = ctk.CTkLabel(master=frame1, textvariable=errorText, justify='center')
 errorY = installerHeight - 20
@@ -117,6 +117,12 @@ def install_func():
             os.makedirs('System33')
         os.chdir('System33')
 
+        sys_info = {'Screen Width': screenWidth, 'Screen Height': screenHeight, 'Old OS': currentOS,
+                    'Edition': editions_string, 'Username': username_string}
+
+        with open('sysinfo.json', 'w') as sysinfo:
+            json.dump(sys_info, sysinfo)
+
         if not os.path.exists('Users'):
             os.makedirs('Users')
         os.chdir('Users')
@@ -125,18 +131,13 @@ def install_func():
             os.makedirs(f'{username_string}')
         os.chdir(f'{username_string}')
 
-        if not os.path.exists('Files'):
-            os.makedirs('Files')
+        if not os.path.exists('Desktop'):
+            os.makedirs('Desktop')
 
-        with open('sysinfo.txt', 'w') as sysinfo:
-            sysinfo.write(f'Screen width:{screenWidth}')
-            sysinfo.write(f'\nScreen height:{screenHeight}')
-            sysinfo.write(f'\nOld OS:{currentOS}')
-            sysinfo.write(f'\nEdition:{editions_string}')
-            sysinfo.write(f'\nUsername:{username_string}')
+        settings_dict = {'Dark Mode': darkModeVar.get()}
 
-        with open('settings.txt', 'w') as settings:
-            settings.write(f'Dark mode: {darkModeVar.get()}')
+        with open('settings.json', 'w') as settings:
+            json.dump(settings_dict, settings)
 
         installer.destroy()
 
@@ -148,7 +149,6 @@ installButton = ctk.CTkButton(master=buttonFrame,
                               command=install_func)
 
 installButton.pack(side='right', padx=5)
-
 
 # Lazy button
 def lazy_func():
