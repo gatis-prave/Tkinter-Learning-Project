@@ -1,4 +1,5 @@
 import os
+from subprocess import call
 import ctypes
 import json
 import tkinter as tk
@@ -14,7 +15,7 @@ if not os.path.exists('System33'):
     exit()
 
 rootDir = f'{os.getcwd()}\\System33'
-os.chdir(rootDir)
+os.chdir(f'{rootDir}\\System Info')
 
 # Load system info
 with open('sysinfo.json', 'r') as sysinfo:
@@ -23,18 +24,17 @@ with open('sysinfo.json', 'r') as sysinfo:
     screenWidth = sysInfo['Screen Width']
     screenHeight = sysInfo['Screen Height']
     edition = sysInfo['Edition']
-    username = sysInfo['Username']
 
-    print('System info')
+    print('\n\nSystem info')
     for item in sysInfo.items():
         print(item)
 
 
 # Load user settings
-os.chdir(f'{rootDir}\\Users\\{username}')
 with open('settings.json', 'r') as settings_file:
     settings = json.load(settings_file)
 
+    username = settings['Username']
     darkMode = settings['Dark Mode']
 
     print('\nSettings')
@@ -52,14 +52,17 @@ class NewWindow(ctk.CTkToplevel):  # The window always minimizes on creation for
 
 # Desktop
 # Window setup
-deskWindow = ctk.CTk()
-deskWindow.title(edition)
-deskWindow.geometry(f'{screenWidth}x{screenHeight}')
+window = ctk.CTk()
+window.title(edition)
+window.geometry(f'{screenWidth}x{screenHeight}')
 minWidth = int(screenWidth * 0.5)
 minHeight = int(screenHeight * 0.5)
-deskWindow.attributes('-fullscreen', 1)
+window.attributes('-fullscreen', 1)
+
 if darkMode:
     ctk.set_appearance_mode('dark')
+else:
+    ctk.set_appearance_mode('light')
 
 def update_list(value, outdated_list):
     outdated_list.clear()
@@ -67,9 +70,10 @@ def update_list(value, outdated_list):
         outdated_list.append(list_item)
     return outdated_list
 
+
 class Desktop(ctk.CTkFrame):
     def __init__(self, column_count, row_count):
-        super().__init__(master=deskWindow)
+        super().__init__(master=window)
         self.place(x=0, y=0, relwidth=1, relheight=1)
 
         self.columns = column_count
@@ -222,9 +226,6 @@ class Tile(ctk.CTkFrame):
 
         selected_tile.icon_label.pack_forget()
         selected_tile.name_label.pack_forget()
-
-        selected_tile.icon_label.pack_forget()
-        selected_tile.name_label.pack_forget()
         selected_tile.empty = True
         selected_tile.label.pack(expand=True, fill='both')
 
@@ -236,13 +237,16 @@ print('------------------------------------------------')
 # Taskbar
 class Taskbar(ctk.CTkFrame):
     def __init__(self):
-        super().__init__(deskWindow, border_width=1)
+        super().__init__(window, border_width=1)
         self.place(x=0, rely=0.955, relwidth=1, relheight=0.05)
 
         self.timeLabel = ctk.CTkLabel(master=self)
         self.timeLabel.pack(side='right', padx=5)
         self.timeLabel.bind('<Activate>', self.update_time)
         self.update_time()
+
+        self.startButton = ctk.CTkButton(master=self, text='Start')
+        self.startButton.pack(side='left', padx=5)
 
     def update_time(self):
         time_string = strftime('%H:%M:%S')
@@ -254,9 +258,9 @@ taskbarWid = Taskbar()
 # Start menu and button
 class StartMenu(ctk.CTkFrame):
     def __init__(self):
-        super().__init__(master=deskWindow)
-        # self.place(x=0, rely=0.555)
-        self.place(x=0, rely=0.555, relwidth=0.15, relheight=0.4)
+        super().__init__(master=window)
+        # self.place(x=0, rely=0.555, relwidth=0.15, relheight=0.4)
+        self.place(x=0, rely=0.555, relwidth=0.2, relheight=0.4)
 
         self.starMenuText = f'Hello, {username}!\n{edition} Edition'
         self.startLabel = ctk.CTkLabel(master=self, text=self.starMenuText, anchor='center')
@@ -266,27 +270,77 @@ class StartMenu(ctk.CTkFrame):
         self.startItemContainer.columnconfigure(1, weight=1)
         self.startItemContainer.place(x=0, rely=0.1, relwidth=1, relheight=0.75)
 
-        self.shutDownButton = ctk.CTkButton(master=self, text='Shut down', command=lambda: deskWindow.destroy())
+        self.shutDownButton = ctk.CTkButton(master=self,
+                                            text='Shut down',
+                                            command=lambda: window.destroy())
         self.shutDownButton.place(relx=0.05, rely=0.95, anchor='sw')
+
+        self.appsButton = ctk.CTkButton(master=self, text='Apps')
+        self.appsButton.place(relx=0.95, rely=0.95, anchor='se')
 
         self.lower()
 
     startMenuEnabled = False
 
+    def toggle_start_menu(self):
+        if self.startMenuEnabled:
+            self.startMenuEnabled = False
+            self.lower()
+
+            appMenu.lower()
+            Apps.appsEnabled = False
+        else:
+            self.startMenuEnabled = True
+            self.lift()
+
+
 startMenu = StartMenu()
+taskbarWid.startButton.configure(command=startMenu.toggle_start_menu)
 
-def toggle_start_menu():
-    if StartMenu.startMenuEnabled:
-        StartMenu.startMenuEnabled = False
-        startMenu.lower()
-    else:
-        StartMenu.startMenuEnabled = True
-        startMenu.lift()
+class Apps(ctk.CTkFrame):
+    def __init__(self):
+        super().__init__(master=window)
+        self.place(relx=0.2, rely=0.555, relwidth=0.175, relheight=0.4)
 
+        self.appsLabel = ctk.CTkLabel(master=self, text='Apps', anchor='center', fg_color='grey')
+        self.appsLabel.pack(pady=2)
 
-startButton = ctk.CTkButton(master=taskbarWid, text='Start', command=toggle_start_menu)
-startButton.pack(side='left', padx=5)
+        self.appItemContainer = ctk.CTkFrame(master=self)
+        self.appItemContainer.pack(expand=True, fill='both', padx=1, pady=2)
 
+        self.lower()
+
+        self.appsEnabled = False
+
+    def toggle_app_menu(self):
+        if self.appsEnabled:
+            self.lower()
+            self.appsEnabled = False
+        else:
+            self.lift()
+            self.appsEnabled = True
+            print(self.appsEnabled)
+
+appMenu = Apps()
+startMenu.appsButton.configure(command=appMenu.toggle_app_menu)
+
+class AppButton(ctk.CTkButton):
+    def __init__(self, app_name):
+        super().__init__(master=appMenu.appItemContainer, text=app_name, command=self.open_app)
+
+        self.pack(pady=1)
+
+        self.fileName = f'{app_name}.py'
+
+    def open_app(self):
+        os.chdir(f'{rootDir}\\Programs')
+
+        call(["python", f'{self.fileName}'])
+
+        os.chdir(rootDir)
+
+settingsButton = AppButton('Settings')
+fileExplorerButton = AppButton('File Explorer')
 
 class StartMenuItem(ctk.CTkFrame):
     def __init__(self, label_text):
@@ -321,7 +375,7 @@ def task_manager():
 # noinspection PyUnusedLocal
 class ContextMenu(tk.Menu):
     def __init__(self):
-        super().__init__(deskWindow, tearoff=0)
+        super().__init__(window, tearoff=0)
         self.cMenuX = tk.IntVar(value=0)
         self.cMenuY = tk.IntVar(value=0)
         self.selected_widget = None
@@ -370,13 +424,13 @@ class ContextMenu(tk.Menu):
 
 contextMenu = ContextMenu()
 
-deskWindow.bind('<Button-3>', contextMenu.select_widget)
-deskWindow.bind('<ButtonRelease-3>', contextMenu.open_menu)
+window.bind('<Button-3>', contextMenu.select_widget)
+window.bind('<ButtonRelease-3>', contextMenu.open_menu)
 
 # Debug menu and button
 class Debug(ctk.CTkFrame):
     def __init__(self):
-        super().__init__(deskWindow)
+        super().__init__(window)
         self.enabled = False
         self.place(x=0, y=0)
         self.lower()
@@ -415,17 +469,17 @@ class Debug(ctk.CTkFrame):
             self.lift()
     def fullscreen_toggle(self):
         if self.fullscreenBool.get():
-            deskWindow.attributes('-fullscreen', 1)
+            window.attributes('-fullscreen', 1)
             self.fullscreenBool.set(True)
         else:
-            deskWindow.attributes('-fullscreen', 0)
+            window.attributes('-fullscreen', 0)
             self.fullscreenBool.set(False)
-        print(deskWindow.winfo_width())
+        print(window.winfo_width())
     def taskbar_toggle(self):
         if self.taskbarBool.get():
             self.taskbarBool.set(True)
             taskbarWid.place(x=0, rely=0.955, relwidth=1, relheight=0.045)
-            startButton.pack(side='left', padx=5)
+            taskbarWid.startButton.pack(side='left', padx=5)
             self.debug_button.pack(side='left')
             taskbarWid.timeLabel.pack(side='right', padx=5)
         else:
@@ -443,4 +497,4 @@ class Debug(ctk.CTkFrame):
 
 debugMenu = Debug()
 
-deskWindow.mainloop()
+window.mainloop()

@@ -4,10 +4,14 @@ import ctypes
 import json
 from platform import system, release
 import os
+from subprocess import call
+import shutil
 from darkdetect import isDark
 from random import choice
 
 ctypes.windll.shcore.SetProcessDpiAwareness(2)
+
+rootDir = os.getcwd()
 
 # Window setup
 installer = ctk.CTk()
@@ -62,10 +66,8 @@ usernameLabel.place(relx=0.5, y=userLabelY, anchor='center')
 def switch_ld_mode():
     if darkModeVar.get():
         ctk.set_appearance_mode('dark')
-        darkModeVar.set(True)
     else:
         ctk.set_appearance_mode('light')
-        darkModeVar.set(False)
 
 
 darkModeVar = tk.BooleanVar(value=False)
@@ -117,11 +119,25 @@ def install_func():
             os.makedirs('System33')
         os.chdir('System33')
 
-        sys_info = {'Screen Width': screenWidth, 'Screen Height': screenHeight, 'Old OS': currentOS,
-                    'Edition': editions_string, 'Username': username_string}
+        if not os.path.exists('System Info'):
+            os.makedirs('System Info')
+        os.chdir('System Info')
 
+        sys_info = {'Screen Width': screenWidth, 'Screen Height': screenHeight, 'Old OS': currentOS,
+                    'Edition': editions_string}
         with open('sysinfo.json', 'w') as sysinfo:
             json.dump(sys_info, sysinfo)
+
+        settings_dict = {'Username': username_string, 'Dark Mode': darkModeVar.get()}
+        print(settings_dict)
+        with open('settings.json', 'w') as settings:
+            json.dump(settings_dict, settings)
+        os.chdir(f'{rootDir}\\System33')
+
+        if not os.path.exists('Programs'):
+            os.makedirs('Programs')
+
+        shutil.copyfile(f'{rootDir}\\Settings.py', f'{rootDir}\\System33\\Programs\\Settings.py')
 
         if not os.path.exists('Users'):
             os.makedirs('Users')
@@ -134,12 +150,11 @@ def install_func():
         if not os.path.exists('Desktop'):
             os.makedirs('Desktop')
 
-        settings_dict = {'Dark Mode': darkModeVar.get()}
-
-        with open('settings.json', 'w') as settings:
-            json.dump(settings_dict, settings)
-
         installer.destroy()
+
+        os.chdir(rootDir)
+        call(["python", 'Desktop.py'])
+
 
 
 installButton = ctk.CTkButton(master=buttonFrame,
