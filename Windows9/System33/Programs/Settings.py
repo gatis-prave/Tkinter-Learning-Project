@@ -6,7 +6,7 @@ import customtkinter as ctk
 
 print(f'Current dir (Settings): {os.getcwd()}')
 rootDir = 'C:\\Users\\Gatis\\Documents\\GitHub\\Tkinter-Learning-Project\\Windows9\\System33\\'  # Temp. solution
-os.chdir(rootDir)
+os.chdir(f'{rootDir}\\System Info')
 
 # Load system info
 with open('sysinfo.json', 'r') as sysinfo:
@@ -20,13 +20,6 @@ screenWidth = sysInfo['Screen Width']
 screenHeight = sysInfo['Screen Height']
 edition = sysInfo['Edition']
 
-
-# Window Setup
-window = ctk.CTk()
-window.title('Settings')
-winWidth = int(screenWidth * 0.3)
-winHeight = int(screenHeight * 0.4)
-window.geometry(f'{winWidth}x{winHeight}')
 
 # Load user settings
 with open('settings.json', 'r') as settings_file:
@@ -45,7 +38,17 @@ if darkMode:
 else:
     ctk.set_appearance_mode('light')
 
+os.chdir(rootDir)
+
+# Window Setup
+window = ctk.CTk()
+window.title('Settings')
+winWidth = int(screenWidth * 0.3)
+winHeight = int(screenHeight * 0.4)
+window.geometry(f'{winWidth}x{winHeight}')
+
 # Categories
+
 categoryFrame = ctk.CTkFrame(window)
 categoryFrame.place(x=0, y=0, relwidth=0.3, relheight=1)
 

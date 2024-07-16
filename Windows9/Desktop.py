@@ -15,8 +15,7 @@ if not os.path.exists('System33'):
     exit()
 
 rootDir = f'{os.getcwd()}\\System33'
-os.chdir(rootDir)
-
+os.chdir(f'{rootDir}\\System Info')
 
 # Load system info
 with open('sysinfo.json', 'r') as sysinfo:
@@ -30,28 +29,6 @@ with open('sysinfo.json', 'r') as sysinfo:
     for item in sysInfo.items():
         print(item)
 
-class NewWindow(ctk.CTkToplevel):  # The window always minimizes on creation for some reason
-    def __init__(self, window_title, width, height, min_width, min_height):
-        super().__init__()
-        self.title(window_title)
-        self.geometry(f'{width}x{height}')
-        self.minsize(min_width, min_height)
-
-
-# Window setup
-window = ctk.CTk()
-window.title(edition)
-window.geometry(f'{screenWidth}x{screenHeight}')
-minWidth = int(screenWidth * 0.5)
-minHeight = int(screenHeight * 0.5)
-window.attributes('-fullscreen', 1)
-
-def update_list(value, outdated_list):
-    outdated_list.clear()
-    for list_item in range(value):
-        outdated_list.append(list_item)
-    return outdated_list
-
 
 # Load user settings
 with open('settings.json', 'r') as settings_file:
@@ -64,12 +41,36 @@ with open('settings.json', 'r') as settings_file:
     for item in settings.items():
         print(item)
 
+os.chdir(rootDir)
+
+class NewWindow(ctk.CTkToplevel):  # The window always minimizes on creation for some reason
+    def __init__(self, window_title, width, height, min_width, min_height):
+        super().__init__()
+        self.title(window_title)
+        self.geometry(f'{width}x{height}')
+        self.minsize(min_width, min_height)
+
+# Desktop
+# Window setup
+window = ctk.CTk()
+window.title(edition)
+window.geometry(f'{screenWidth}x{screenHeight}')
+minWidth = int(screenWidth * 0.5)
+minHeight = int(screenHeight * 0.5)
+window.attributes('-fullscreen', 1)
+
 if darkMode:
     ctk.set_appearance_mode('dark')
 else:
     ctk.set_appearance_mode('light')
 
-# Desktop
+def update_list(value, outdated_list):
+    outdated_list.clear()
+    for list_item in range(value):
+        outdated_list.append(list_item)
+    return outdated_list
+
+
 class Desktop(ctk.CTkFrame):
     def __init__(self, column_count, row_count):
         super().__init__(master=window)
@@ -161,7 +162,7 @@ class Tile(ctk.CTkFrame):
     @staticmethod
     def load_desktop_files():
         print('\nLoading desktop files...')
-        os.chdir(f'{rootDir}\\Desktop')
+        os.chdir(f'{rootDir}\\Users\\{username}\\Desktop')
         files_found = 0
         for row in desktop.tiles:
             for tile in row:
@@ -186,7 +187,7 @@ class Tile(ctk.CTkFrame):
     @classmethod
     def open_file(cls):
         selected_tile = cls.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get())
-        os.chdir(f'{rootDir}\\Desktop')
+        os.chdir(f'{rootDir}\\Users\\{username}\\Desktop')
         file_name = f'{selected_tile.column}.{selected_tile.row}.txt'
         file_path = f'{os.getcwd()}\\{file_name}'
         if os.path.exists(file_path):
@@ -197,7 +198,7 @@ class Tile(ctk.CTkFrame):
     def create_text_file(cls):
         selected_tile = cls.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get())
 
-        os.chdir(f'{rootDir}\\Desktop')
+        os.chdir(f'{rootDir}\\Users\\{username}\\Desktop')
 
         file_name = f'{selected_tile.column}.{selected_tile.row}.txt'
         with open(file_name, 'w'):
@@ -216,7 +217,7 @@ class Tile(ctk.CTkFrame):
     def delete_file(cls):
         selected_tile = cls.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get())
 
-        os.chdir(f'{rootDir}\\Desktop')
+        os.chdir(f'{rootDir}\\Users\\{username}\\Desktop')
         file_name = f'{selected_tile.column}.{selected_tile.row}.txt'
         file_path = f'{os.getcwd()}\\{file_name}'
         if os.path.exists(file_path):
@@ -495,6 +496,5 @@ class Debug(ctk.CTkFrame):
         terminal_text.pack(expand=True, fill='both')
 
 debugMenu = Debug()
-
 
 window.mainloop()
