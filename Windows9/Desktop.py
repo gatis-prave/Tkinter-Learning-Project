@@ -43,13 +43,6 @@ with open('settings.json', 'r') as settings_file:
 
 os.chdir(rootDir)
 
-class NewWindow(ctk.CTkToplevel):  # The window always minimizes on creation for some reason
-    def __init__(self, window_title, width, height, min_width, min_height):
-        super().__init__()
-        self.title(window_title)
-        self.geometry(f'{width}x{height}')
-        self.minsize(min_width, min_height)
-
 # Desktop
 # Window setup
 window = ctk.CTk()
@@ -98,18 +91,16 @@ class Tile(ctk.CTkFrame):
         super().__init__(master=desktop)
         self.column = tile_column
         self.row = tile_row
-        self.name = f'Tile-{tile_column}:{tile_row}'
+        self.name = f'Tile {tile_column}-{tile_row}'
         self.empty = True
 
-        self.label_text = ''
-        # self.label_text = f'C:{tile_column}, R:{tile_row}'
-        self.label = ctk.CTkLabel(self, text=self.label_text)
-        self.label.pack(expand=True, fill='both', padx=1, pady=1)
+        self.icon = ctk.CTkLabel(self, text="Icon", fg_color='white')
 
-        rand_col = choice(('red', 'green', 'blue'))
-        self.icon_label = ctk.CTkLabel(self, text="Icon", fg_color=rand_col)
-        rand_name = choice(("Filename", 'File\'s name', 'Name of File'))
-        self.name_label = ctk.CTkLabel(self, text=rand_name)
+        self.file_name = tk.StringVar(value='')
+        self.file_label = ctk.CTkLabel(self, text=self.file_name.get())
+        self.extension = ''
+
+        self.entry = ctk.CTkEntry(self, textvariable=self.file_name)
 
         self.grid(row=tile_row, column=tile_column, sticky='nsew')
 
@@ -129,9 +120,6 @@ class Tile(ctk.CTkFrame):
                 tile_column += 1
             tile_column = 0
             tile_row += 1
-        # print('\n')
-        # for row in parent.tiles:
-        #     print(row)
 
     @classmethod
     def refresh_tiles(cls):
@@ -157,77 +145,116 @@ class Tile(ctk.CTkFrame):
             tile_row = 0
         if tile_row > desktop.rows - 2:
             tile_row = desktop.rows - 2
+        cls.selected_tile = desktop.tiles[tile_column][tile_row][0]
         return desktop.tiles[tile_column][tile_row][0]
 
     @staticmethod
     def load_desktop_files():
-        print('\nLoading desktop files...')
-        os.chdir(f'{rootDir}\\Users\\{username}\\Desktop')
-        files_found = 0
-        for row in desktop.tiles:
-            for tile in row:
-                tile = tile[0]
-                file_name = f'{tile.column}.{tile.row}.txt'
-                file_path = f'{os.getcwd()}\\{file_name}'
-                if os.path.exists(file_path):
-                    print(f'File found: {file_name}')
-                    files_found += 1
-                    tile.empty = False
-                    tile.label.pack_forget()
+        print('\nLoading desktop files...\n')
+        os.chdir(f'{rootDir}\\Desktop')
+        with open('files.json', 'r') as files:
+            file_dict = json.load(files)
 
-                    tile.icon_label.configure(text='Txt', fg_color='white', text_color='black')
-                    tile.name_label.configure(text='New Text Document', justify='center')
-                    tile.icon_label.pack(expand=True, fill='both', padx=18, pady=3)
-                    tile.name_label.pack(padx=5, pady=5)
+        files_found = 0
+        for item in file_dict:
+            column = int(file_dict[item].split('-')[0])
+            row = int(file_dict[item].split('-')[1])
+
+            tile = desktop.tiles[column][row][0]
+
+            print(f'{item} in {tile.name}')
+
+            tile.empty = False
+
+            match item.split('.')[1]:
+                case 'txt':
+                    tile.icon.configure(text='Txt')
+                    tile.icon.place(relx=0.5, rely=0.1, relwidth=0.4, relheight=0.5, anchor='n')
+
+            tile.file_name.set(item)
+            tile.file_label.configure(textvariable=tile.file_name)
+            tile.file_label.place(relx=0, rely=0.6)
+
+            files_found += 1
         if files_found == 0:
             print('No files found.')
         else:
+            print(f'\nLoaded {files_found} files')
             print('Done')
 
     @classmethod
     def open_file(cls):
         selected_tile = cls.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get())
-        os.chdir(f'{rootDir}\\Users\\{username}\\Desktop')
-        file_name = f'{selected_tile.column}.{selected_tile.row}.txt'
+        os.chdir(f'{rootDir}\\Desktop')
+        file_name = selected_tile.file_name
         file_path = f'{os.getcwd()}\\{file_name}'
-        if os.path.exists(file_path):
-            os.startfile(file_path)
+        os.startfile(file_path)
         os.chdir(rootDir)
+
+    # Desktop file creation
+    # noinspection PyUnusedLocal
+    @classmethod
+    def hide_entry(cls, event):
+        cls.selected_tile.file_name.set(f'{cls.selected_tile.entry.get()}{cls.selected_tile.extension}')
+
+        cls.selected_tile.entry.place_forget()
+        cls.selected_tile.file_label.configure(textvariable=cls.selected_tile.file_name)
+        cls.selected_tile.file_label.place(relx=0, rely=0.6)
+
+    @classmethod
+    def name_file(cls):
+        if cls.selected_tile.entry.place_info():
+            window.after(1000, cls.name_file)
+        else:
+            with open(cls.selected_tile.file_name.get(), 'w'):
+                pass
+            with open('files.json', 'r') as files:
+                file_dict = json.load(files)
+            file_dict.update({cls.selected_tile.file_name.get(): f'{cls.selected_tile.column}-{cls.selected_tile.row}'})
+            with open('files.json', 'w') as files:
+                json.dump(file_dict, files)
+
+            os.chdir(rootDir)
 
     @classmethod
     def create_text_file(cls):
         selected_tile = cls.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get())
 
-        os.chdir(f'{rootDir}\\Users\\{username}\\Desktop')
+        os.chdir(f'{rootDir}\\Desktop')
 
-        file_name = f'{selected_tile.column}.{selected_tile.row}.txt'
-        with open(file_name, 'w'):
-            pass
-        os.chdir(rootDir)
+        selected_tile.extension = '.txt'
 
         selected_tile.empty = False
-        selected_tile.label.pack_forget()
 
-        selected_tile.icon_label.configure(text='Txt', fg_color='white', text_color='black')
-        selected_tile.name_label.configure(text='New Text Document', justify='center')
-        selected_tile.icon_label.pack(expand=True, fill='both', padx=18, pady=3)
-        selected_tile.name_label.pack(padx=5, pady=5)
+        selected_tile.icon.configure(text='Txt')
+        selected_tile.icon.place(relx=0.5, rely=0.1, relwidth=0.4, relheight=0.5, anchor='n')
+
+        selected_tile.file_name.set('New File')
+        selected_tile.entry.place(relx=0.5, rely=0.65, relheight=0.35, relwidth=0.99, anchor='n')
+        selected_tile.entry.bind('<Return>', cls.hide_entry)
+
+        Tile.name_file()
 
     @classmethod
     def delete_file(cls):
         selected_tile = cls.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get())
 
-        os.chdir(f'{rootDir}\\Users\\{username}\\Desktop')
-        file_name = f'{selected_tile.column}.{selected_tile.row}.txt'
+        os.chdir(f'{rootDir}\\Desktop')
+        file_name = selected_tile.file_name.get()
         file_path = f'{os.getcwd()}\\{file_name}'
-        if os.path.exists(file_path):
-            os.remove(file_path)
+        os.remove(file_path)
+
+        with open('files.json', 'r') as files:
+            file_dict = json.load(files)
+        del file_dict[selected_tile.file_name.get()]
+        with open('files.json', 'w') as files:
+            json.dump(file_dict, files)
+
         os.chdir(rootDir)
 
-        selected_tile.icon_label.pack_forget()
-        selected_tile.name_label.pack_forget()
+        selected_tile.icon.place_forget()
+        selected_tile.file_label.place_forget()
         selected_tile.empty = True
-        selected_tile.label.pack(expand=True, fill='both')
 
 Tile.create_tiles(desktop.columns, desktop.rows - 1)
 print('Done')
@@ -391,6 +418,7 @@ class ContextMenu(tk.Menu):
                 break
             self.selected_widget = self.selected_widget.master
 
+
         if not isinstance(self.selected_widget, Tile):
             self.selected_widget = event.widget.winfo_containing(self.cMenuX.get(), self.cMenuY.get())
             while self.selected_widget is not None:
@@ -457,9 +485,6 @@ class Debug(ctk.CTkFrame):
         self.refreshTilesButton = ctk.CTkButton(self, text='Refresh Tiles', command=Tile.refresh_tiles)
         self.refreshTilesButton.pack(side='top', padx=5, pady=5)
 
-        self.pTerminalButton = ctk.CTkButton(master=self, text='Open Terminal', command=self.open_terminal)
-        self.pTerminalButton.pack(side='top', padx=5, pady=5)
-
     def toggle_menu(self):
         if self.enabled:
             self.enabled = False
@@ -485,15 +510,6 @@ class Debug(ctk.CTkFrame):
         else:
             self.taskbarBool.set(False)
             taskbarWid.place_forget()
-
-    @staticmethod
-    def open_terminal():
-        window = NewWindow('Python Terminal', minWidth, minHeight, minWidth, minHeight)
-        terminal_text = ctk.CTkTextbox(window)
-        text_scroll = ctk.CTkScrollbar(master=window, orientation='vertical', command=terminal_text.yview)
-        terminal_text.configure(yscrollcommand=text_scroll.set)
-        text_scroll.place(relx=1, rely=0, relheight=1, anchor='ne')
-        terminal_text.pack(expand=True, fill='both')
 
 debugMenu = Debug()
 

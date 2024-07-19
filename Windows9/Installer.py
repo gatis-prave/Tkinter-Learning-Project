@@ -139,16 +139,13 @@ def install_func():
 
         shutil.copyfile(f'{rootDir}\\Settings.py', f'{rootDir}\\System33\\Programs\\Settings.py')
 
-        if not os.path.exists('Users'):
-            os.makedirs('Users')
-        os.chdir('Users')
-
-        if not os.path.exists(f'{username_string}'):
-            os.makedirs(f'{username_string}')
-        os.chdir(f'{username_string}')
-
         if not os.path.exists('Desktop'):
             os.makedirs('Desktop')
+        os.chdir('Desktop')
+
+        files_dict = {}
+        with open('files.json', 'w') as files:
+            json.dump(files_dict, files)
 
         installer.destroy()
 
