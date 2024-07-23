@@ -5,7 +5,6 @@ import json
 import tkinter as tk
 import customtkinter as ctk
 from time import strftime
-from random import choice
 
 ctypes.windll.shcore.SetProcessDpiAwareness(2)
 
@@ -29,6 +28,14 @@ with open('sysinfo.json', 'r') as sysinfo:
     for item in sysInfo.items():
         print(item)
 
+# Desktop
+# Window setup
+window = ctk.CTk()
+window.title(edition)
+window.geometry(f'{screenWidth}x{screenHeight}')
+minWidth = int(screenWidth * 0.5)
+minHeight = int(screenHeight * 0.5)
+window.attributes('-fullscreen', 1)
 
 # Load user settings
 with open('settings.json', 'r') as settings_file:
@@ -42,15 +49,6 @@ with open('settings.json', 'r') as settings_file:
         print(item)
 
 os.chdir(rootDir)
-
-# Desktop
-# Window setup
-window = ctk.CTk()
-window.title(edition)
-window.geometry(f'{screenWidth}x{screenHeight}')
-minWidth = int(screenWidth * 0.5)
-minHeight = int(screenHeight * 0.5)
-window.attributes('-fullscreen', 1)
 
 if darkMode:
     ctk.set_appearance_mode('dark')
@@ -151,7 +149,7 @@ class Tile(ctk.CTkFrame):
     @staticmethod
     def load_desktop_files():
         print('\nLoading desktop files...\n')
-        os.chdir(f'{rootDir}\\Desktop')
+        os.chdir(f'{rootDir}\\System Info')
         with open('files.json', 'r') as files:
             file_dict = json.load(files)
 
@@ -185,8 +183,8 @@ class Tile(ctk.CTkFrame):
     @classmethod
     def open_file(cls):
         selected_tile = cls.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get())
-        os.chdir(f'{rootDir}\\Desktop')
-        file_name = selected_tile.file_name
+        os.chdir(f'{rootDir}\\Files\\Desktop')
+        file_name = selected_tile.file_name.get()
         file_path = f'{os.getcwd()}\\{file_name}'
         os.startfile(file_path)
         os.chdir(rootDir)
@@ -206,8 +204,11 @@ class Tile(ctk.CTkFrame):
         if cls.selected_tile.entry.place_info():
             window.after(1000, cls.name_file)
         else:
+            os.chdir(f'{rootDir}\\Files\\Desktop')
             with open(cls.selected_tile.file_name.get(), 'w'):
                 pass
+
+            os.chdir(f'{rootDir}\\System Info')
             with open('files.json', 'r') as files:
                 file_dict = json.load(files)
             file_dict.update({cls.selected_tile.file_name.get(): f'{cls.selected_tile.column}-{cls.selected_tile.row}'})
@@ -220,7 +221,7 @@ class Tile(ctk.CTkFrame):
     def create_text_file(cls):
         selected_tile = cls.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get())
 
-        os.chdir(f'{rootDir}\\Desktop')
+        # os.chdir(f'{rootDir}\\Desktop')
 
         selected_tile.extension = '.txt'
 
@@ -239,11 +240,12 @@ class Tile(ctk.CTkFrame):
     def delete_file(cls):
         selected_tile = cls.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get())
 
-        os.chdir(f'{rootDir}\\Desktop')
+        os.chdir(f'{rootDir}\\Files\\Desktop')
         file_name = selected_tile.file_name.get()
         file_path = f'{os.getcwd()}\\{file_name}'
         os.remove(file_path)
 
+        os.chdir(f'{rootDir}\\System Info')
         with open('files.json', 'r') as files:
             file_dict = json.load(files)
         del file_dict[selected_tile.file_name.get()]
@@ -282,7 +284,7 @@ class Taskbar(ctk.CTkFrame):
 
 taskbarWid = Taskbar()
 
-# Start menu and button
+# Start menu
 class StartMenu(ctk.CTkFrame):
     def __init__(self):
         super().__init__(master=window)
@@ -293,9 +295,8 @@ class StartMenu(ctk.CTkFrame):
         self.startLabel = ctk.CTkLabel(master=self, text=self.starMenuText, anchor='center')
         self.startLabel.place(relx=0.02, rely=0.02)
 
-        self.startItemContainer = ctk.CTkFrame(master=self)
-        self.startItemContainer.columnconfigure(1, weight=1)
-        self.startItemContainer.place(x=0, rely=0.1, relwidth=1, relheight=0.75)
+        self.itemContainer = ctk.CTkFrame(master=self)
+        self.itemContainer.place(x=0, rely=0.1, relwidth=1, relheight=0.75)
 
         self.shutDownButton = ctk.CTkButton(master=self,
                                             text='Shut down',
@@ -323,6 +324,24 @@ class StartMenu(ctk.CTkFrame):
 
 startMenu = StartMenu()
 taskbarWid.startButton.configure(command=startMenu.toggle_start_menu)
+
+class StartMenuItem(ctk.CTkFrame):
+    def __init__(self, label_text):
+        super().__init__(master=startMenu.itemContainer)
+        self._border_width = 1
+        self._border_color = 'black'
+        self._fg_color = '#D3D3D3'
+
+        icon = ctk.CTkLabel(master=self, text='Icon', fg_color='grey')
+        icon.place(relx=0, rely=0.5, relwidth=0.2, relheight=0.5, anchor='w')
+        name = ctk.CTkLabel(master=self, text=label_text, text_color='black')
+        name.place(relx=1, rely=0.5, relwidth=0.2, relheight=0.5, anchor='e')
+
+startItem1 = StartMenuItem('Item 1').place(relx=0, rely=0, relwidth=1, relheight=0.2)
+startItem2 = StartMenuItem('Item 2').place(relx=0, rely=0.2, relwidth=1, relheight=0.2)
+startItem3 = StartMenuItem('Item 3').place(relx=0, rely=0.4, relwidth=1, relheight=0.2)
+startItem4 = StartMenuItem('Item 4').place(relx=0, rely=0.6, relwidth=1, relheight=0.2)
+startItem5 = StartMenuItem('Item 5').place(relx=0, rely=0.8, relwidth=1, relheight=0.2)
 
 class Apps(ctk.CTkFrame):
     def __init__(self):
@@ -368,27 +387,6 @@ class AppButton(ctk.CTkButton):
 
 settingsButton = AppButton('Settings')
 fileExplorerButton = AppButton('File Explorer')
-
-class StartMenuItem(ctk.CTkFrame):
-    def __init__(self, label_text):
-        super().__init__(master=startMenu.startItemContainer)
-        self._border_width = 1
-        self._border_color = 'black'
-        self._fg_color = '#D3D3D3'
-
-        rand_col = choice(('red', 'green', 'blue'))
-        icon = ctk.CTkLabel(master=self, text=f'{label_text}\nIcon', fg_color=rand_col)
-        icon.pack(side='left', padx=7)
-        name = ctk.CTkLabel(master=self, text=f'{label_text} name', text_color='black', fg_color='pink', anchor='w')
-        name.pack(side='left', expand=True, fill='both', padx=5, pady=10)
-
-max_items = 6  # Anything above 6 breaks it, don't understand why
-item_list = []
-item_list = update_list(max_items, item_list)
-# startItemContainer.rowconfigure(rowList, weight=1, uniform='a')
-for item in range(max_items):
-    # StartMenuItem(f'Item {item}').grid(column=1, row=item, sticky='nsew')
-    StartMenuItem(f'Item {item}').pack(expand=True, fill='both', padx=2, pady=1)
 
 
 # Context Menu

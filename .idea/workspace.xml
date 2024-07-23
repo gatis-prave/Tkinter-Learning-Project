@@ -34,6 +34,7 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "Python.Desktop.executor": "Run",
+    "Python.File Explorer.executor": "Run",
     "Python.Installer.executor": "Run",
     "Python.Settings.executor": "Run",
     "Python.Win9.executor": "Run",
