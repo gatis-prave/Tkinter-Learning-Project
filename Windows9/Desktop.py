@@ -3,6 +3,7 @@ from subprocess import call
 import ctypes
 import json
 import tkinter as tk
+from tkinter import messagebox
 import customtkinter as ctk
 from time import strftime
 
@@ -13,7 +14,7 @@ if not os.path.exists('System33'):
     print('Windows 9 is not installed! Please run the installer!')
     exit()
 
-rootDir = f'{os.getcwd()}\\System33'
+rootDir = f'{os.path.dirname(__file__)}\\System33'
 os.chdir(f'{rootDir}\\System Info')
 
 # Load system info
@@ -86,19 +87,24 @@ desktop = Desktop(24, 15)
 
 class Tile(ctk.CTkFrame):
     def __init__(self, tile_column, tile_row):
-        super().__init__(master=desktop)
+        super().__init__(master=desktop, fg_color='transparent', border_width=0)
         self.column = tile_column
         self.row = tile_row
         self.name = f'Tile {tile_column}-{tile_row}'
         self.empty = True
 
-        self.icon = ctk.CTkLabel(self, text="Icon", fg_color='white')
+        self.pinned = False
+        self.pinnedShortcut = None
+
+        self.icon = ctk.CTkLabel(self, text='', fg_color='white')
 
         self.file_name = tk.StringVar(value='')
-        self.file_label = ctk.CTkLabel(self, text=self.file_name.get())
+        self.file_label = ctk.CTkLabel(self,
+                                       text=self.file_name.get(), font=('Helvetica', 10),
+                                       justify='center')
         self.extension = ''
 
-        self.entry = ctk.CTkEntry(self, textvariable=self.file_name)
+        self.entry = ctk.CTkEntry(self, textvariable=self.file_name, font=('Helvetica', 10))
 
         self.grid(row=tile_row, column=tile_column, sticky='nsew')
 
@@ -118,17 +124,6 @@ class Tile(ctk.CTkFrame):
                 tile_column += 1
             tile_column = 0
             tile_row += 1
-
-    @classmethod
-    def refresh_tiles(cls):
-        for row in desktop.tiles:
-            for tile in row:
-                tile = tile[0]
-                if not tile.empty:
-                    tile.icon_label.pack_forget()
-                    tile.name_label.pack_forget()
-                    tile.empty = True
-                    tile.label.pack(expand=True, fill='both')
 
     @classmethod
     def find_tile(cls, x_pos, y_pos):
@@ -164,14 +159,36 @@ class Tile(ctk.CTkFrame):
 
             tile.empty = False
 
-            match item.split('.')[1]:
-                case 'txt':
-                    tile.icon.configure(text='Txt')
-                    tile.icon.place(relx=0.5, rely=0.1, relwidth=0.4, relheight=0.5, anchor='n')
+            split_file_name = item.split('.')
+
+            if len(split_file_name) > 1:
+                match split_file_name[1]:
+                    case 'txt':
+                        tile.icon.configure(text='Txt')
+                        tile.icon.place(relx=0.5, rely=0.1, relwidth=0.4, relheight=0.5, anchor='n')
+                        tile.extension = '.txt'
+                    case 'docx':
+                        tile.icon.configure(text='W')
+                        tile.icon.configure(text_color='white')
+                        tile.icon.configure(fg_color='blue')
+                        tile.icon.place(relx=0.5, rely=0.1, relwidth=0.4, relheight=0.5, anchor='n')
+                    case 'xlsx':
+                        tile.icon.configure(text='E')
+                        tile.icon.configure(text_color='white')
+                        tile.icon.configure(fg_color='green')
+                        tile.icon.place(relx=0.5, rely=0.1, relwidth=0.4, relheight=0.5, anchor='n')
+                    case 'pptx':
+                        tile.icon.configure(text='P')
+                        tile.icon.configure(text_color='white')
+                        tile.icon.configure(fg_color='orange')
+                        tile.icon.place(relx=0.5, rely=0.1, relwidth=0.4, relheight=0.5, anchor='n')
+            else:
+                tile.icon.configure(fg_color='khaki')
+                tile.icon.place(relx=0.5, rely=0.1, relwidth=0.7, relheight=0.5, anchor='n')
 
             tile.file_name.set(item)
             tile.file_label.configure(textvariable=tile.file_name)
-            tile.file_label.place(relx=0, rely=0.6)
+            tile.file_label.place(relx=0.5, rely=0.7, anchor='n', relwidth=1, relheight=0.2)
 
             files_found += 1
         if files_found == 0:
@@ -182,7 +199,7 @@ class Tile(ctk.CTkFrame):
 
     @classmethod
     def open_file(cls):
-        selected_tile = cls.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get())
+        selected_tile = cls.selected_tile
         os.chdir(f'{rootDir}\\Files\\Desktop')
         file_name = selected_tile.file_name.get()
         file_path = f'{os.getcwd()}\\{file_name}'
@@ -193,20 +210,48 @@ class Tile(ctk.CTkFrame):
     # noinspection PyUnusedLocal
     @classmethod
     def hide_entry(cls, event):
-        cls.selected_tile.file_name.set(f'{cls.selected_tile.entry.get()}{cls.selected_tile.extension}')
+        name_entry = cls.selected_tile.entry.get()
+        extension = cls.selected_tile.extension
+        name_entry = name_entry.translate({ord(i): None for i in '*"/\\<>:|?'})
+        name_entry = name_entry.strip(' ')
+
+        if name_entry == '':
+            match cls.selected_tile.extension:
+                case '':
+                    name_entry = 'New Folder'
+                    cls.selected_tile.entry.insert(0, name_entry)
+                case '.txt':
+                    name_entry = 'New Text File'
+                    cls.selected_tile.entry.insert(0, name_entry)
+
+        os.chdir(f'{rootDir}\\System Info')
+        with open('files.json', 'r') as files:
+            file_dict = json.load(files)
+
+        if f'{name_entry}{extension}' in file_dict:
+            messagebox.showerror('Error', 'File name taken')
+            raise Exception('File name taken')
+        else:
+            cls.selected_tile.file_name.set(f'{name_entry}{extension}')
 
         cls.selected_tile.entry.place_forget()
         cls.selected_tile.file_label.configure(textvariable=cls.selected_tile.file_name)
-        cls.selected_tile.file_label.place(relx=0, rely=0.6)
+        cls.selected_tile.file_label.place(relx=0.5, rely=0.7, anchor='n', relwidth=1, relheight=0.2)
 
     @classmethod
     def name_file(cls):
         if cls.selected_tile.entry.place_info():
-            window.after(1000, cls.name_file)
+            window.after(50, cls.name_file)
+
+            if len(cls.selected_tile.entry.get()) > 10:
+                cls.selected_tile.entry.delete(10, tk.END)
         else:
             os.chdir(f'{rootDir}\\Files\\Desktop')
-            with open(cls.selected_tile.file_name.get(), 'w'):
-                pass
+            if cls.selected_tile.extension == '':
+                os.makedirs(cls.selected_tile.file_name.get())
+            else:
+                with open(cls.selected_tile.file_name.get(), 'w'):
+                    pass
 
             os.chdir(f'{rootDir}\\System Info')
             with open('files.json', 'r') as files:
@@ -217,33 +262,69 @@ class Tile(ctk.CTkFrame):
 
             os.chdir(rootDir)
 
+            window.config(cursor='')
+
     @classmethod
-    def create_text_file(cls):
-        selected_tile = cls.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get())
+    def create_file(cls, extension):
+        selected_tile = cls.selected_tile
 
-        # os.chdir(f'{rootDir}\\Desktop')
-
-        selected_tile.extension = '.txt'
-
+        selected_tile.extension = extension
         selected_tile.empty = False
 
-        selected_tile.icon.configure(text='Txt')
-        selected_tile.icon.place(relx=0.5, rely=0.1, relwidth=0.4, relheight=0.5, anchor='n')
+        match extension:
+            case '':
+                selected_tile.icon.configure(fg_color='khaki')
+                selected_tile.icon.place(relx=0.5, rely=0.1, relwidth=0.7, relheight=0.5, anchor='n')
 
-        selected_tile.file_name.set('New File')
+                selected_tile.file_name.set('New Folder')
+            case '.txt':
+                selected_tile.icon.configure(text='Txt')
+                selected_tile.icon.place(relx=0.5, rely=0.1, relwidth=0.4, relheight=0.5, anchor='n')
+
+                selected_tile.file_name.set('New Text File')
+            case '.docx':
+                selected_tile.icon.configure(text='W')
+                selected_tile.icon.configure(text_color='white')
+                selected_tile.icon.configure(fg_color='blue')
+                selected_tile.icon.place(relx=0.5, rely=0.1, relwidth=0.4, relheight=0.5, anchor='n')
+
+                selected_tile.file_name.set('New Word Document')
+            case '.xlsx':
+                selected_tile.icon.configure(text='E')
+                selected_tile.icon.configure(text_color='white')
+                selected_tile.icon.configure(fg_color='green')
+                selected_tile.icon.place(relx=0.5, rely=0.1, relwidth=0.4, relheight=0.5, anchor='n')
+
+                selected_tile.file_name.set('New Excel Document')
+            case '.pptx':
+                selected_tile.icon.configure(text='P')
+                selected_tile.icon.configure(text_color='white')
+                selected_tile.icon.configure(fg_color='orange')
+                selected_tile.icon.place(relx=0.5, rely=0.1, relwidth=0.4, relheight=0.5, anchor='n')
+
+                selected_tile.file_name.set('New PowerPoint Document')
+
         selected_tile.entry.place(relx=0.5, rely=0.65, relheight=0.35, relwidth=0.99, anchor='n')
-        selected_tile.entry.bind('<Return>', cls.hide_entry)
+        window.bind('<Return>', cls.hide_entry)
+        selected_tile.entry.focus_force()
+        selected_tile.entry.select_range(0, tk.END)
+
+        window.config(cursor='none')
 
         Tile.name_file()
 
     @classmethod
     def delete_file(cls):
-        selected_tile = cls.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get())
+        selected_tile = cls.selected_tile
 
         os.chdir(f'{rootDir}\\Files\\Desktop')
         file_name = selected_tile.file_name.get()
         file_path = f'{os.getcwd()}\\{file_name}'
-        os.remove(file_path)
+
+        if selected_tile.extension == '':
+            os.rmdir(file_path)
+        else:
+            os.remove(file_path)
 
         os.chdir(f'{rootDir}\\System Info')
         with open('files.json', 'r') as files:
@@ -258,10 +339,17 @@ class Tile(ctk.CTkFrame):
         selected_tile.file_label.place_forget()
         selected_tile.empty = True
 
+        if selected_tile.pinned:
+            selected_tile.pinned = False
+
+            selected_tile.pinnedShortcut.empty = True
+            selected_tile.pinnedShortcut.configure(text='Empty Shortcut')
+            selected_tile.pinnedShortcut.configure(state='disabled')
+
+
 Tile.create_tiles(desktop.columns, desktop.rows - 1)
 print('Done')
 Tile.load_desktop_files()
-print('------------------------------------------------')
 
 # Taskbar
 class Taskbar(ctk.CTkFrame):
@@ -287,13 +375,14 @@ taskbarWid = Taskbar()
 # Start menu
 class StartMenu(ctk.CTkFrame):
     def __init__(self):
-        super().__init__(master=window)
+        super().__init__(master=window,
+                         border_width=1)
         # self.place(x=0, rely=0.555, relwidth=0.15, relheight=0.4)
         self.place(x=0, rely=0.555, relwidth=0.2, relheight=0.4)
 
-        self.starMenuText = f'Hello, {username}!\n{edition} Edition'
+        self.starMenuText = f'{edition} Edition'
         self.startLabel = ctk.CTkLabel(master=self, text=self.starMenuText, anchor='center')
-        self.startLabel.place(relx=0.02, rely=0.02)
+        self.startLabel.place(relx=0.02, rely=0.01)
 
         self.itemContainer = ctk.CTkFrame(master=self)
         self.itemContainer.place(x=0, rely=0.1, relwidth=1, relheight=0.75)
@@ -325,23 +414,121 @@ class StartMenu(ctk.CTkFrame):
 startMenu = StartMenu()
 taskbarWid.startButton.configure(command=startMenu.toggle_start_menu)
 
-class StartMenuItem(ctk.CTkFrame):
-    def __init__(self, label_text):
-        super().__init__(master=startMenu.itemContainer)
-        self._border_width = 1
-        self._border_color = 'black'
-        self._fg_color = '#D3D3D3'
+class Shortcut(ctk.CTkButton):
+    def __init__(self, number):
+        super().__init__(master=startMenu.itemContainer,
+                         text='Empty Shortcut',
+                         command=self.open_shortcut,
+                         state='disabled',
+                         anchor='w')
+        self.pack(expand=True, fill='both', padx=1, pady=1)
 
-        icon = ctk.CTkLabel(master=self, text='Icon', fg_color='grey')
-        icon.place(relx=0, rely=0.5, relwidth=0.2, relheight=0.5, anchor='w')
-        name = ctk.CTkLabel(master=self, text=label_text, text_color='black')
-        name.place(relx=1, rely=0.5, relwidth=0.2, relheight=0.5, anchor='e')
+        self.name = f'StartItem{number}'
+        self.empty = True
+        self.fileName = ''
+        self.path = ''
 
-startItem1 = StartMenuItem('Item 1').place(relx=0, rely=0, relwidth=1, relheight=0.2)
-startItem2 = StartMenuItem('Item 2').place(relx=0, rely=0.2, relwidth=1, relheight=0.2)
-startItem3 = StartMenuItem('Item 3').place(relx=0, rely=0.4, relwidth=1, relheight=0.2)
-startItem4 = StartMenuItem('Item 4').place(relx=0, rely=0.6, relwidth=1, relheight=0.2)
-startItem5 = StartMenuItem('Item 5').place(relx=0, rely=0.8, relwidth=1, relheight=0.2)
+    def __str__(self):
+        return self.name
+
+    ItemList = []
+
+    @classmethod
+    def load_shortcuts(cls):
+        os.chdir(f'{rootDir}\\System Info')
+
+        with open('files.json', 'r') as files:
+            file_dict = json.load(files)
+
+        with open('start.json', 'r') as files:
+            start_dict = json.load(files)
+
+        print('\nLoading Start Menu shortcuts:')
+        for item in start_dict:
+            print(f'{item} in {start_dict[item]}')
+
+            column = int(file_dict[item].split('-')[0])
+            row = int(file_dict[item].split('-')[1])
+            tile = desktop.tiles[column][row][0]
+
+            shortcut = cls.ItemList[int(start_dict[item].replace('StartItem', '')) - 1]
+
+            tile.pinned = True
+            tile.pinnedShortcut = shortcut
+
+            path = f'{rootDir}\\Files\\Desktop\\{tile.file_name.get()}'
+            shortcut.empty = False
+            shortcut.fileName = tile.file_name.get()
+            shortcut.path = path
+            shortcut.configure(state='normal')
+            shortcut.configure(text=tile.file_name.get())
+
+        print('Done')
+
+    def open_shortcut(self):
+        os.startfile(self.path)
+
+    @classmethod
+    def pin_to_start(cls):
+        tile = Tile.selected_tile
+        for shortcut in cls.ItemList:
+            if shortcut.empty:
+                print(tile)
+                path = f'{rootDir}\\Files\\Desktop\\{tile.file_name.get()}'
+                print(tile)
+                print(path)
+
+                tile.pinned = True
+                tile.pinnedShortcut = shortcut
+
+                shortcut.empty = False
+                shortcut.fileName = tile.file_name.get()
+                shortcut.path = path
+                shortcut.configure(state='normal')
+                shortcut.configure(text=tile.file_name.get())
+
+                os.chdir(f'{rootDir}\\System Info')
+                with open('start.json', 'r') as files:
+                    start_dict = json.load(files)
+
+                start_dict.update({tile.file_name.get(): str(shortcut)})
+
+                with open(f'start.json', 'w') as start:
+                    json.dump(start_dict, start)
+                break
+            else:
+                print(f'{shortcut} taken')
+
+    @classmethod
+    def remove_shortcut(cls):
+        shortcut = contextMenu.selected_widget
+
+        os.chdir(f'{rootDir}\\System Info')
+        with open('files.json', 'r') as files:
+            file_dict = json.load(files)
+
+        column = int(file_dict[shortcut.fileName].split('-')[0])
+        row = int(file_dict[shortcut.fileName].split('-')[1])
+
+        tile = desktop.tiles[column][row][0]
+        tile.pinned = False
+
+        shortcut.empty = True
+        shortcut.configure(text='Empty Shortcut')
+        shortcut.configure(state='disabled')
+
+        with open('start.json', 'r') as files:
+            start_dict = json.load(files)
+
+        del start_dict[shortcut.fileName]
+        with open('start.json', 'w') as files:
+            json.dump(start_dict, files)
+
+for item in range(1, 7):
+    Shortcut.ItemList.append(Shortcut(item))
+
+Shortcut.load_shortcuts()
+print('------------------------------------------------')
 
 class Apps(ctk.CTkFrame):
     def __init__(self):
@@ -388,65 +575,105 @@ class AppButton(ctk.CTkButton):
 settingsButton = AppButton('Settings')
 fileExplorerButton = AppButton('File Explorer')
 
-
 # Context Menu
-def open_settings():
-    print('Settings opened')
-
-def task_manager():
-    print('Opened Task Manager')
-
-
 # noinspection PyUnusedLocal
 class ContextMenu(tk.Menu):
     def __init__(self):
         super().__init__(window, tearoff=0)
         self.cMenuX = tk.IntVar(value=0)
         self.cMenuY = tk.IntVar(value=0)
+
+        self.newSubMenu = tk.Menu(self, tearoff=False)
+
         self.selected_widget = None
+        self.widget_class = None
 
     def select_widget(self, event):
         self.cMenuX.set(event.x_root)
         self.cMenuY.set(event.y_root)
 
         self.selected_widget = event.widget.winfo_containing(self.cMenuX.get(), self.cMenuY.get())
+        print(f'\nInitial Widget: {self.selected_widget}')
 
         while self.selected_widget is not None:
-            if isinstance(self.selected_widget, Tile):
+            if isinstance(self.selected_widget, Taskbar) or isinstance(self.selected_widget, Shortcut)\
+                    or isinstance(self.selected_widget, StartMenu) or isinstance(self.selected_widget, Apps)\
+                    or isinstance(self.selected_widget, Tile):
                 break
             self.selected_widget = self.selected_widget.master
 
+        print(f'Selected widget: {self.selected_widget}')
 
-        if not isinstance(self.selected_widget, Tile):
-            self.selected_widget = event.widget.winfo_containing(self.cMenuX.get(), self.cMenuY.get())
-            while self.selected_widget is not None:
-                if isinstance(self.selected_widget, Taskbar):
-                    break
-                self.selected_widget = self.selected_widget.master
+        self.widget_class = self.selected_widget.__class__.__name__
+        if self.widget_class == 'Tile':
+            Tile.selected_tile = self.selected_widget
+        print(f'Widget class: {self.widget_class}')
 
-        print(f'\nSelected widget: {self.selected_widget}')
-
-    def add_options(self, widget):
+    def add_options(self):
         self.delete(0, tk.END)
-        if isinstance(widget, Tile):
-            selected_tile = Tile.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get())
-            if selected_tile.empty:
-                self.add_command(label='New Text File', command=Tile.create_text_file)
-            else:
-                self.add_command(label='Open File', command=Tile.open_file)
-                self.add_command(label='Delete', command=Tile.delete_file)
-        elif isinstance(widget, Taskbar):
-            self.add_command(label='Settings', command=open_settings)
-            self.add_command(label='Task Manager', command=task_manager)
-        else:
-            self.add_command(label='Settings', command=open_settings)
+        self.newSubMenu.delete(0, tk.END)
+        match self.widget_class:
+            case 'Tile':
+                if self.selected_widget.empty:
+                    self.add_cascade(label='New', menu=self.newSubMenu)
+                    self.newSubMenu.add_command(label='Folder', command=lambda: Tile.create_file(''))
+                    self.newSubMenu.add_separator()
+                    self.newSubMenu.add_command(label='Text File', command=lambda: Tile.create_file('.txt'))
+                    self.newSubMenu.add_command(label='Word Document', command=lambda: Tile.create_file('.docx'))
+                    self.newSubMenu.add_command(label='Excel Document', command=lambda: Tile.create_file('.xlsx'))
+                    self.newSubMenu.add_command(label='PowerPoint Document', command=lambda: Tile.create_file('.pptx'))
+
+                else:
+                    self.add_command(label='Open', command=Tile.open_file)
+                    self.add_command(label='Delete', command=Tile.delete_file)
+                    self.add_separator()
+                    if not self.selected_widget.pinned:
+                        self.add_command(label='Pin to Start ', command=Shortcut.pin_to_start)
+                    else:
+                        self.add_command(label='Pin to Start ', command=Shortcut.pin_to_start, state='disabled')
+            case 'Taskbar':
+                self.add_command(label='Taskbar test')
+            case 'StartMenu':
+                self.add_command(label='StarMenu test')
+            case 'Shortcut':
+                if self.selected_widget.empty:
+                    self.add_command(label='Empty shortcut test')
+                else:
+                    self.add_command(label='Remove Shortcut', command=Shortcut.remove_shortcut)
+            case 'Apps':
+                self.add_command(label='Apps menu test')
+            case 'NoneType':
+                selected_tile = Tile.find_tile(contextMenu.cMenuX.get(), contextMenu.cMenuY.get())
+                if selected_tile.empty:
+                    self.add_cascade(label='New', menu=self.newSubMenu)
+                    self.newSubMenu.add_command(label='Folder', command=lambda: Tile.create_file(''))
+                    self.newSubMenu.add_separator()
+                    self.newSubMenu.add_command(label='Text File', command=lambda: Tile.create_file('.txt'))
+                    self.newSubMenu.add_command(label='Word Document', command=lambda: Tile.create_file('.docx'))
+                    self.newSubMenu.add_command(label='Excel Document', command=lambda: Tile.create_file('.xlsx'))
+                    self.newSubMenu.add_command(label='PowerPoint Document', command=lambda: Tile.create_file('.pptx'))
+                else:
+                    self.add_command(label='Settings', command=ContextMenu.open_settings)
+        menu_length = self.index('end') + 1
+        if menu_length > 0:
+            self.add_separator()
+        self.add_command(label='Settings', command=ContextMenu.open_settings)
+        print(f'\nMenu length: {menu_length}')
 
     def open_menu(self, event):
-        self.add_options(self.selected_widget)
+        self.add_options()
         try:
             contextMenu.tk_popup(self.cMenuX.get(), self.cMenuY.get())
         finally:
             contextMenu.grab_release()
+
+    @staticmethod
+    def open_settings():
+        os.chdir(f'{rootDir}\\Programs')
+
+        call(["python", 'Settings.py'])
+
+        os.chdir(rootDir)
 
 contextMenu = ContextMenu()
 
@@ -456,7 +683,7 @@ window.bind('<ButtonRelease-3>', contextMenu.open_menu)
 # Debug menu and button
 class Debug(ctk.CTkFrame):
     def __init__(self):
-        super().__init__(window)
+        super().__init__(window, border_width=1)
         self.enabled = False
         self.place(x=0, y=0)
         self.lower()
@@ -480,8 +707,24 @@ class Debug(ctk.CTkFrame):
             variable=self.taskbarBool)
         self.taskbarCheck.pack(side='top', padx=5, pady=5)
 
-        self.refreshTilesButton = ctk.CTkButton(self, text='Refresh Tiles', command=Tile.refresh_tiles)
-        self.refreshTilesButton.pack(side='top', padx=5, pady=5)
+        self.tileLabel = ctk.CTkLabel(self, text='Tile Options')
+        self.tileLabel.pack(side='top', padx=5, pady=5)
+
+        self.bordersBool = tk.BooleanVar(value=False)
+        self.bordersCheck = ctk.CTkCheckBox(
+            master=self,
+            text='Tile Borders',
+            command=self.toggle_tile_borders,
+            variable=self.bordersBool)
+        self.bordersCheck.pack(side='top', padx=5, pady=5)
+
+        self.labelsBool = tk.BooleanVar(value=False)
+        self.labelsCheck = ctk.CTkCheckBox(
+            master=self,
+            text='Label Background',
+            command=self.toggle_label_background,
+            variable=self.labelsBool)
+        self.labelsCheck.pack(side='top', padx=5, pady=5)
 
     def toggle_menu(self):
         if self.enabled:
@@ -509,6 +752,36 @@ class Debug(ctk.CTkFrame):
             self.taskbarBool.set(False)
             taskbarWid.place_forget()
 
+    def toggle_tile_borders(self):
+        if self.bordersBool.get():
+            self.bordersBool.set(True)
+            for row in desktop.tiles:
+                for tile in row:
+                    tile = tile[0]
+                    tile.configure(border_width=1)
+        else:
+            self.bordersBool.set(False)
+            for row in desktop.tiles:
+                for tile in row:
+                    tile = tile[0]
+                    tile.configure(border_width=0)
+
+    def toggle_label_background(self):
+        if self.labelsBool.get():
+            self.labelsBool.set(True)
+            for row in desktop.tiles:
+                for tile in row:
+                    tile = tile[0]
+                    if not tile.empty:
+                        tile.file_label.configure(bg_color='red')
+        else:
+            self.labelsBool.set(False)
+            for row in desktop.tiles:
+                for tile in row:
+                    tile = tile[0]
+                    if not tile.empty:
+                        tile.file_label.configure(bg_color='transparent')
 debugMenu = Debug()
+
 
 window.mainloop()

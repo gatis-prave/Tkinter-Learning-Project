@@ -3,7 +3,7 @@ import json
 import tkinter as tk
 import customtkinter as ctk
 
-rootDir = 'C:\\Users\\Gatis\\Documents\\GitHub\\Tkinter-Learning-Project\\Windows9\\System33'  # Temp. solution
+rootDir = f'{os.path.dirname(__file__)}'.strip('\\Programs')
 os.chdir(f'{rootDir}\\System Info')
 
 # Load system info
@@ -50,13 +50,13 @@ class Menu(ctk.CTkFrame):
         super().__init__(master=window)
         self.place(x=0, y=0, relwidth=1, relheight=0.15)
 
-        self.back = ctk.CTkButton(self, text='<-', command=self.go_back)
+        self.back = ctk.CTkButton(self, text='<-', command=self.go_back, state='disabled')
         self.back.place(relx=0.01, rely=0.5, relwidth=0.05, relheight=0.5, anchor='w')
 
-        self.forward = ctk.CTkButton(self, text='->', command=self.go_forward)
+        self.forward = ctk.CTkButton(self, text='->', command=self.go_forward, state='disabled')
         self.forward.place(relx=0.06, rely=0.5, relwidth=0.05, relheight=0.5, anchor='w')
 
-        self.up = ctk.CTkButton(self, text='^', command=self.go_up)
+        self.up = ctk.CTkButton(self, text='^', command=self.go_up, state='disabled')
         self.up.place(relx=0.12, rely=0.5, relwidth=0.05, relheight=0.5, anchor='w')
 
         self.refresh = ctk.CTkButton(self, text='@', command=Menu.refresh)
@@ -69,35 +69,51 @@ class Menu(ctk.CTkFrame):
         self.dirHist = [f'{rootDir}\\Files']
         self.fwdDirs = []
 
+        self.upDir = ''
+
     def go_back(self):
+        up_dir = menu.directory.get()[:menu.directory.get().rindex('\\')]
+        if not up_dir == rootDir:
+            menu.up.configure(state='normal')
+
+        menu.forward.configure(state='normal')
         if len(self.dirHist) > 1:
             self.directory.set(self.dirHist[-1])
             self.fwdDirs.append(os.getcwd())
+            menu.forward.configure(state='normal')
             self.dirHist.remove(self.dirHist[-1])
 
             os.chdir(self.directory.get())
             Item.update_items()
         elif len(self.dirHist) == 1 and not self.dirHist[0] == os.getcwd():
+            menu.back.configure(state='disabled')
             self.directory.set(self.dirHist[-1])
             self.fwdDirs.append(os.getcwd())
 
             os.chdir(self.directory.get())
             Item.update_items()
 
-        print('\nDirectory History:')
+        self.update_up_dir()
+
+        print('\nAfter back')
+        print('Directory History:')
         for directory in self.dirHist:
             print(directory)
-
         print('\nForward Directories:')
         for directory in self.fwdDirs:
             print(directory)
+        print('\nUp Dir:')
+        print(self.upDir)
 
     def go_forward(self):
-        print('\nForward Directories:')
-        for directory in self.fwdDirs:
-            print(directory)
+        up_dir = menu.directory.get()[:menu.directory.get().rindex('\\')]
+        if not up_dir == rootDir:
+            menu.up.configure(state='normal')
+
+        menu.back.configure(state='normal')
 
         if len(self.fwdDirs) > 0:
+            print('Fwd Dirs > 1')
             self.directory.set(self.fwdDirs[-1])
 
             if not os.getcwd() == menu.dirHist[-1]:
@@ -107,21 +123,49 @@ class Menu(ctk.CTkFrame):
 
             os.chdir(self.directory.get())
 
+        if len(self.fwdDirs) < 1:
+            menu.forward.configure(state='disabled')
+
         Item.update_items()
 
-    def go_up(self):
-        up_dir = self.directory.get()[:self.directory.get().rindex('\\')]
-        print(up_dir)
+        self.update_up_dir()
 
-        if not up_dir == rootDir:
+        print('\nAfter forward')
+        print('Directory History:')
+        for directory in self.dirHist:
+            print(directory)
+        print('\nForward Directories:')
+        for directory in self.fwdDirs:
+            print(directory)
+        print('\nUp Dir:')
+        print(self.upDir)
+
+    def go_up(self):
+        menu.back.configure(state='normal')
+        menu.forward.configure(state='disabled')
+
+        if not self.upDir == rootDir:
+            self.fwdDirs.clear()
             if not os.getcwd() == menu.dirHist[-1]:
                 menu.dirHist.append(os.getcwd())
 
-            menu.directory.set(up_dir)
+            menu.directory.set(self.upDir)
             os.chdir(self.directory.get())
             Item.update_items()
 
+        self.upDir = menu.directory.get()[:menu.directory.get().rindex('\\')]
+        if self.upDir == rootDir:
+            menu.up.configure(state='disabled')
 
+        print('\nUp Dir:')
+        print(menu.upDir)
+
+    def update_up_dir(self):
+        self.upDir = menu.directory.get()[:menu.directory.get().rindex('\\')]
+        if self.upDir == rootDir:
+            self.up.configure(state='disabled')
+        else:
+            self.up.configure(state='normal')
     @staticmethod
     def refresh():
         Item.update_items()
@@ -155,11 +199,16 @@ class QuickAccess(ctk.CTkButton):
         self.pack(fill='x')
 
     def switch_directory(self):
+        menu.back.configure(state='normal')
         if not os.getcwd() == menu.dirHist[-1]:
             menu.dirHist.append(os.getcwd())
 
         menu.directory.set(self.directory)
         os.chdir(self.directory)
+
+        menu.update_up_dir()
+        print('\nUp Dir:')
+        print(menu.upDir)
 
         Item.update_items()
 
@@ -197,10 +246,13 @@ class Item(ctk.CTkButton):
         for item in os.listdir():
             main.items.append(Item(item))
 
-        print(f'\n{main.items}')
-
     def change_directory(self):
-        if not os.getcwd() == menu.dirHist[-1]:
+        up_dir = menu.directory.get()[:menu.directory.get().rindex('\\')]
+        if not up_dir == rootDir:
+            menu.up.configure(state='normal')
+
+        menu.back.configure(state='normal')
+        if not os.getcwd() == menu.dirHist[-1] and not os.path.isfile(self.directory):
             menu.dirHist.append(os.getcwd())
 
         if os.path.isfile(self.directory):
@@ -211,11 +263,71 @@ class Item(ctk.CTkButton):
 
             Item.update_items()
 
+        menu.update_up_dir()
+
+        print('\nUp Dir:')
+        print(menu.upDir)
         print('\nDirectory History:')
         for directory in menu.dirHist:
             print(directory)
 
-
 Item.update_items()
+
+class ContextMenu(tk.Menu):
+    def __init__(self):
+        super().__init__(window, tearoff=0)
+        self.cMenuX = tk.IntVar(value=0)
+        self.cMenuY = tk.IntVar(value=0)
+        self.selected_widget = None
+        self.widget_class = None
+
+    def select_widget(self, event):
+        self.cMenuX.set(event.x_root)
+        self.cMenuY.set(event.y_root)
+
+        self.selected_widget = event.widget.winfo_containing(self.cMenuX.get(), self.cMenuY.get())
+        print(f'\nInitial Widget: {self.selected_widget}')
+
+        while self.selected_widget is not None:
+            if isinstance(self.selected_widget, Menu) or isinstance(self.selected_widget, Directories)\
+                    or isinstance(self.selected_widget, QuickAccess) or isinstance(self.selected_widget, Item)\
+                    or isinstance(self.selected_widget, Main):
+                break
+            self.selected_widget = self.selected_widget.master
+
+        print(f'Selected widget: {self.selected_widget}')
+
+        self.widget_class = self.selected_widget.__class__.__name__
+        print(f'Widget class: {self.widget_class}')
+
+    def add_options(self):
+        self.delete(0, tk.END)
+        match self.widget_class:
+            case 'Menu':
+                self.add_command(label='Menu test')
+            case 'Directories':
+                self.add_command(label='Directories test')
+            case 'QuickAccess':
+                self.add_command(label='QuickAccess test')
+            case 'Item':
+                self.add_command(label='Item test')
+            case 'Main':
+                self.add_command(label='Main test')
+            case 'NoneType':
+                self.add_command(label='NoneType test')
+        menu_length = self.index('end') + 1
+        print(f'\nMenu length: {menu_length}')
+
+    def open_menu(self, event):
+        self.add_options()
+        try:
+            contextMenu.tk_popup(self.cMenuX.get(), self.cMenuY.get())
+        finally:
+            contextMenu.grab_release()
+
+contextMenu = ContextMenu()
+
+window.bind('<Button-3>', contextMenu.select_widget)
+window.bind('<ButtonRelease-3>', contextMenu.open_menu)
 
 window.mainloop()

@@ -37,17 +37,19 @@
     "Python.File Explorer.executor": "Run",
     "Python.Installer.executor": "Run",
     "Python.Settings.executor": "Run",
+    "Python.Testing.executor": "Run",
     "Python.Win9.executor": "Run",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "git-widget-placeholder": "main",
     "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "C:/Users/Gatis/Documents/GitHub/Tkinter-Learning-Project/Windows9/System33/Programs",
-    "settings.editor.selected.configurable": "reference.settingsdialog.IDE.editor.colors"
+    "last_opened_file_path": "C:/Users/Gatis/Documents/GitHub/Tkinter-Learning-Project/Windows9",
+    "settings.editor.selected.configurable": "preferences.lookFeel"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\Gatis\Documents\GitHub\Tkinter-Learning-Project\Windows9" />
       <recent name="C:\Users\Gatis\Documents\GitHub\Tkinter-Learning-Project\Windows9\System33\Programs" />
     </key>
   </component>

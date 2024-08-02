@@ -3,9 +3,7 @@ import json
 import tkinter as tk
 import customtkinter as ctk
 
-
-print(f'Current dir (Settings): {os.getcwd()}')
-rootDir = 'C:\\Users\\Gatis\\Documents\\GitHub\\Tkinter-Learning-Project\\Windows9\\System33\\'  # Temp. solution
+rootDir = f'{os.path.dirname(__file__)}'.strip('\\Programs')
 os.chdir(f'{rootDir}\\System Info')
 
 # Load system info

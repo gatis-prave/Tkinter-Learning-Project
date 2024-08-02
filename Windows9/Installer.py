@@ -146,6 +146,10 @@ class Installer(ctk.CTkFrame):
             files_dict = {}
             with open('files.json', 'w') as files:
                 json.dump(files_dict, files)
+
+            start_items = {}
+            with open('start.json', 'w') as files:
+                json.dump(start_items, files)
             os.chdir(f'{rootDir}\\System33')
 
             if not os.path.exists('Programs'):
