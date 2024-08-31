@@ -1,6 +1,7 @@
 import os
 import json
 import tkinter as tk
+from tkinter import messagebox
 import customtkinter as ctk
 
 rootDir = f'{os.path.dirname(__file__)}'.strip('\\Programs')
@@ -214,12 +215,138 @@ class QuickAccess(ctk.CTkButton):
 
 desktopBtn = QuickAccess('Desktop')
 
-class Main(ctk.CTkFrame):
+class Main(ctk.CTkScrollableFrame):
     def __init__(self):
         super().__init__(master=window, border_width=2)
         self.place(relx=0.2, rely=0.15, relwidth=0.8, relheight=0.85)
 
+        self.file_name = tk.StringVar(value='')
+        self.extension = ''
+        self.entry = ctk.CTkEntry(self, textvariable=self.file_name)
+        self.entry_packed = False
+
+
     items = []
+
+    @classmethod
+    def hide_entry(cls, event):
+        name_entry =main.entry.get()
+        extension = main.extension
+        name_entry = name_entry.translate({ord(i): None for i in '*"/\\<>:|?.'})
+        name_entry = name_entry.strip(' ')
+
+        if name_entry == '':
+            match main.extension:
+                case '':
+                    name_entry = 'New Folder'
+                    main.entry.insert(0, name_entry)
+                case '.txt':
+                    name_entry = 'New Text File'
+                    main.entry.insert(0, name_entry)
+                case '.docx':
+                    name_entry = 'New Word Document'
+                    main.entry.insert(0, name_entry)
+                case '.xlsx':
+                    name_entry = 'New Excel Document'
+                    main.entry.insert(0, name_entry)
+                case '.pptx':
+                    name_entry = 'New PowerPoint Document'
+                    main.entry.insert(0, name_entry)
+
+        file_dict = os.listdir(menu.directory.get())
+
+        if f'{name_entry}{extension}' in file_dict:
+            messagebox.showerror('Error', 'File name taken')
+            raise Exception('File name taken')
+        else:
+            main.file_name.set(f'{name_entry}{extension}')
+
+        main.entry.pack_forget()
+        main.entry_packed = False
+
+    @classmethod
+    def name_file(cls):
+        if main.entry_packed:
+            window.after(10, cls.name_file)
+            entry = main.entry.get().translate({ord(i): None for i in '*"/\\<>:|?.'})
+            main.entry.delete(0, 'end')
+            main.entry.insert(0, entry)
+
+            if len(main.entry.get()) > 16:
+                main.entry.delete(16, tk.END)
+        else:
+            os.chdir(menu.directory.get())
+            if main.extension == '':
+                os.makedirs(main.file_name.get())
+            else:
+                with open(main.file_name.get(), 'w'):
+                    pass
+
+            Item.update_items()
+
+            if os.getcwd() == f'{rootDir}\\Files\\Desktop':
+                print('\nDesktop File:')
+                os.chdir(f'{rootDir}\\System Info')
+
+                with open('files.json', 'r') as files:
+                    file_dict = json.load(files)
+
+                file_values = file_dict.values()
+
+                column = 0
+                row = 0
+                value = f'{column}-{row}'
+
+                while not value == '24-13':
+                    if value not in file_values:
+                        file_dict.update({main.file_name.get(): value})
+                        with open('files.json', 'w') as files:
+                            json.dump(file_dict, files)
+                        break
+                    else:
+                        print(value)
+                        if row < 14:
+                            if column < 24:
+                                column += 1
+                                value = f'{column}-{row}'
+                            else:
+                                row += 1
+                                column = 0
+                                value = f'{column}-{row}'
+                        else:
+                            raise Exception('Too many desktop files')
+
+                print(main.file_name.get())
+                os.chdir(menu.directory.get())
+                print(os.getcwd())
+
+            window.config(cursor='')
+
+    @classmethod
+    def create_file(cls, extension):
+        main.entry.pack(fill = 'x')
+        main.entry_packed = True
+        main.extension = extension
+
+        match extension:
+            case '':
+                main.file_name.set('New Folder')
+            case '.txt':
+                main.file_name.set('New Text File')
+            case '.docx':
+                main.file_name.set('New Word Document')
+            case '.xlsx':
+                main.file_name.set('New Excel Document')
+            case '.pptx':
+                main.file_name.set('New PowerPoint Document')
+
+        window.bind('<Return>', cls.hide_entry)
+        main.entry.focus_force()
+        main.entry.select_range(0, tk.END)
+
+        window.config(cursor='none')
+
+        Main.name_file()
 
 main = Main()
 
@@ -231,10 +358,11 @@ class Item(ctk.CTkButton):
                          anchor='w',
                          fg_color='grey')
 
-        self.pack(fill='x')
+        self.pack(fill='x', pady=2, padx=4)
 
         self.name = name
         self.directory = f'{os.getcwd()}\\{self.name}'
+        self.extension = ''
 
     @classmethod
     def update_items(cls):
@@ -243,8 +371,29 @@ class Item(ctk.CTkButton):
 
         main.items.clear()
 
-        for item in os.listdir():
+        for item in os.listdir(menu.directory.get()):
             main.items.append(Item(item))
+
+        for button in main.items:
+            split_file_name = button.name.split('.')
+
+            if len(split_file_name) > 1:
+                extension = split_file_name[1]
+                button.extension = f'.{extension}'
+                match extension:
+                    case 'txt':
+                        button.configure(fg_color='white')
+                        button.configure(text_color='black')
+                    case 'docx':
+                        button.configure(fg_color='blue')
+                    case 'xlsx':
+                        button.configure(fg_color='green')
+                    case 'pptx':
+                        button.configure(fg_color='orange')
+            else:
+                button.configure(fg_color='khaki')
+                button.configure(text_color='black')
+
 
     def change_directory(self):
         up_dir = menu.directory.get()[:menu.directory.get().rindex('\\')]
@@ -281,6 +430,8 @@ class ContextMenu(tk.Menu):
         self.selected_widget = None
         self.widget_class = None
 
+        self.newSubMenu = tk.Menu(self, tearoff=False)
+
     def select_widget(self, event):
         self.cMenuX.set(event.x_root)
         self.cMenuY.set(event.y_root)
@@ -302,21 +453,30 @@ class ContextMenu(tk.Menu):
 
     def add_options(self):
         self.delete(0, tk.END)
+        self.newSubMenu.delete(0, tk.END)
         match self.widget_class:
-            case 'Menu':
-                self.add_command(label='Menu test')
             case 'Directories':
                 self.add_command(label='Directories test')
             case 'QuickAccess':
                 self.add_command(label='QuickAccess test')
             case 'Item':
                 self.add_command(label='Item test')
+            case 'NoneType': # Sometimes selects this instead of 'Main' class, don't know why
+                self.add_cascade(label='New', menu=self.newSubMenu)
+                self.newSubMenu.add_command(label='Folder', command=lambda: Main.create_file(''))
+                self.newSubMenu.add_separator()
+                self.newSubMenu.add_command(label='Text File', command=lambda: Main.create_file('.txt'))
+                self.newSubMenu.add_command(label='Word Document', command=lambda: Main.create_file('.docx'))
+                self.newSubMenu.add_command(label='Excel Document', command=lambda: Main.create_file('.xlsx'))
+                self.newSubMenu.add_command(label='PowerPoint Document', command=lambda: Main.create_file('.pptx'))
             case 'Main':
-                self.add_command(label='Main test')
-            case 'NoneType':
-                self.add_command(label='NoneType test')
-        menu_length = self.index('end') + 1
-        print(f'\nMenu length: {menu_length}')
+                self.add_cascade(label='New', menu=self.newSubMenu)
+                self.newSubMenu.add_command(label='Folder', command=lambda: Main.create_file(''))
+                self.newSubMenu.add_separator()
+                self.newSubMenu.add_command(label='Text File', command=lambda: Main.create_file('.txt'))
+                self.newSubMenu.add_command(label='Word Document', command=lambda: Main.create_file('.docx'))
+                self.newSubMenu.add_command(label='Excel Document', command=lambda: Main.create_file('.xlsx'))
+                self.newSubMenu.add_command(label='PowerPoint Document', command=lambda: Main.create_file('.pptx'))
 
     def open_menu(self, event):
         self.add_options()

@@ -99,6 +99,7 @@ class Tile(ctk.CTkFrame):
         self.icon = ctk.CTkLabel(self, text='', fg_color='white')
 
         self.file_name = tk.StringVar(value='')
+        self.split_file_name = tk.StringVar(value='')
         self.file_label = ctk.CTkLabel(self,
                                        text=self.file_name.get(), font=('Helvetica', 10),
                                        justify='center')
@@ -161,12 +162,15 @@ class Tile(ctk.CTkFrame):
 
             split_file_name = item.split('.')
 
+            file_name = split_file_name[0]
+
             if len(split_file_name) > 1:
-                match split_file_name[1]:
+                extension = split_file_name[1]
+                tile.extension = f'.{extension}'
+                match extension:
                     case 'txt':
                         tile.icon.configure(text='Txt')
                         tile.icon.place(relx=0.5, rely=0.1, relwidth=0.4, relheight=0.5, anchor='n')
-                        tile.extension = '.txt'
                     case 'docx':
                         tile.icon.configure(text='W')
                         tile.icon.configure(text_color='white')
@@ -187,8 +191,18 @@ class Tile(ctk.CTkFrame):
                 tile.icon.place(relx=0.5, rely=0.1, relwidth=0.7, relheight=0.5, anchor='n')
 
             tile.file_name.set(item)
-            tile.file_label.configure(textvariable=tile.file_name)
-            tile.file_label.place(relx=0.5, rely=0.7, anchor='n', relwidth=1, relheight=0.2)
+            if len(item) > 12:
+                part1 = item[:13]
+                part2 = item[13:]
+
+                name = f'{part1}\n{part2}'
+                tile.split_file_name.set(name)
+                tile.file_label.configure(textvariable=tile.split_file_name)
+                tile.file_label.configure(font=('Helvetica', 8))
+                tile.file_label.place(relx=0.5, rely=0.7, anchor='n', relwidth=1, relheight=0.3)
+            else:
+                tile.file_label.configure(textvariable=tile.file_name)
+                tile.file_label.place(relx=0.5, rely=0.7, anchor='n', relwidth=1, relheight=0.2)
 
             files_found += 1
         if files_found == 0:
@@ -212,7 +226,7 @@ class Tile(ctk.CTkFrame):
     def hide_entry(cls, event):
         name_entry = cls.selected_tile.entry.get()
         extension = cls.selected_tile.extension
-        name_entry = name_entry.translate({ord(i): None for i in '*"/\\<>:|?'})
+        name_entry = name_entry.translate({ord(i): None for i in '*"/\\<>:|?.'})
         name_entry = name_entry.strip(' ')
 
         if name_entry == '':
@@ -222,6 +236,15 @@ class Tile(ctk.CTkFrame):
                     cls.selected_tile.entry.insert(0, name_entry)
                 case '.txt':
                     name_entry = 'New Text File'
+                    cls.selected_tile.entry.insert(0, name_entry)
+                case '.docx':
+                    name_entry = 'New Word Document'
+                    cls.selected_tile.entry.insert(0, name_entry)
+                case '.xlsx':
+                    name_entry = 'New Excel Document'
+                    cls.selected_tile.entry.insert(0, name_entry)
+                case '.pptx':
+                    name_entry = 'New PowerPoint Document'
                     cls.selected_tile.entry.insert(0, name_entry)
 
         os.chdir(f'{rootDir}\\System Info')
@@ -235,16 +258,36 @@ class Tile(ctk.CTkFrame):
             cls.selected_tile.file_name.set(f'{name_entry}{extension}')
 
         cls.selected_tile.entry.place_forget()
-        cls.selected_tile.file_label.configure(textvariable=cls.selected_tile.file_name)
-        cls.selected_tile.file_label.place(relx=0.5, rely=0.7, anchor='n', relwidth=1, relheight=0.2)
+
+        if len(name_entry) > 12:
+            if name_entry[10:16].__contains__(' '):  # Maybe add this...
+                print('Has space in middle')
+
+            part1 = name_entry[:13]
+            part2 = name_entry[13:]
+
+            name_entry = f'{part1}\n{part2}'
+            cls.selected_tile.split_file_name.set(f'{name_entry}{extension}')
+            cls.selected_tile.file_label.configure(textvariable=cls.selected_tile.split_file_name)
+            cls.selected_tile.file_label.configure(font=('Helvetica', 8))
+            cls.selected_tile.file_label.place(relx=0.5, rely=0.7, anchor='n', relwidth=1, relheight=0.3)
+        else:
+            cls.selected_tile.file_label.configure(textvariable=cls.selected_tile.file_name)
+            cls.selected_tile.file_label.place(relx=0.5, rely=0.7, anchor='n', relwidth=1, relheight=0.2)
+
+        if debugMenu.labelsBool.get():
+            cls.selected_tile.file_label.configure(fg_color='red')
 
     @classmethod
     def name_file(cls):
         if cls.selected_tile.entry.place_info():
-            window.after(50, cls.name_file)
+            window.after(10, cls.name_file)
+            entry = cls.selected_tile.entry.get().translate({ord(i): None for i in '*"/\\<>:|?.'})
+            cls.selected_tile.entry.delete(0, 'end')
+            cls.selected_tile.entry.insert(0, entry)
 
-            if len(cls.selected_tile.entry.get()) > 10:
-                cls.selected_tile.entry.delete(10, tk.END)
+            if len(cls.selected_tile.entry.get()) > 24:
+                cls.selected_tile.entry.delete(24, tk.END)
         else:
             os.chdir(f'{rootDir}\\Files\\Desktop')
             if cls.selected_tile.extension == '':
@@ -363,7 +406,7 @@ class Taskbar(ctk.CTkFrame):
         self.update_time()
 
         self.startButton = ctk.CTkButton(master=self, text='Start')
-        self.startButton.pack(side='left', padx=5)
+        self.startButton.place(relx=0.005, rely=0.5, anchor='w', relwidth=0.04, relheight=0.7)
 
     def update_time(self):
         time_string = strftime('%H:%M:%S')
@@ -390,10 +433,10 @@ class StartMenu(ctk.CTkFrame):
         self.shutDownButton = ctk.CTkButton(master=self,
                                             text='Shut down',
                                             command=lambda: window.destroy())
-        self.shutDownButton.place(relx=0.05, rely=0.95, anchor='sw')
+        self.shutDownButton.place(relx=0.05, rely=0.95, relwidth=0.3, anchor='sw')
 
         self.appsButton = ctk.CTkButton(master=self, text='Apps')
-        self.appsButton.place(relx=0.95, rely=0.95, anchor='se')
+        self.appsButton.place(relx=0.95, rely=0.95, relwidth=0.3, anchor='se')
 
         self.lower()
 
@@ -532,7 +575,7 @@ print('------------------------------------------------')
 
 class Apps(ctk.CTkFrame):
     def __init__(self):
-        super().__init__(master=window)
+        super().__init__(master=window, border_width=1)
         self.place(relx=0.2, rely=0.555, relwidth=0.175, relheight=0.4)
 
         self.appsLabel = ctk.CTkLabel(master=self, text='Apps', anchor='center', fg_color='grey')
@@ -658,7 +701,6 @@ class ContextMenu(tk.Menu):
         if menu_length > 0:
             self.add_separator()
         self.add_command(label='Settings', command=ContextMenu.open_settings)
-        print(f'\nMenu length: {menu_length}')
 
     def open_menu(self, event):
         self.add_options()
@@ -689,7 +731,7 @@ class Debug(ctk.CTkFrame):
         self.lower()
 
         self.debug_button = ctk.CTkButton(master=taskbarWid, text='Debug Menu', command=self.toggle_menu)
-        self.debug_button.pack(side='left')
+        self.debug_button.place(relx=0.05, rely=0.5, anchor='w', relwidth=0.06, relheight=0.7)
 
         self.fullscreenBool = tk.BooleanVar(value=True)
         self.fullscreenCheck = ctk.CTkCheckBox(
@@ -726,6 +768,9 @@ class Debug(ctk.CTkFrame):
             variable=self.labelsBool)
         self.labelsCheck.pack(side='top', padx=5, pady=5)
 
+        self.wipeDesktop = ctk.CTkButton(self, text='Wipe Desktop', command=Debug.wipe_desktop)
+        self.wipeDesktop.pack(side='top', padx=5, pady=5)
+
     def toggle_menu(self):
         if self.enabled:
             self.enabled = False
@@ -744,13 +789,10 @@ class Debug(ctk.CTkFrame):
     def taskbar_toggle(self):
         if self.taskbarBool.get():
             self.taskbarBool.set(True)
-            taskbarWid.place(x=0, rely=0.955, relwidth=1, relheight=0.045)
-            taskbarWid.startButton.pack(side='left', padx=5)
-            self.debug_button.pack(side='left')
-            taskbarWid.timeLabel.pack(side='right', padx=5)
+            taskbarWid.lift()
         else:
             self.taskbarBool.set(False)
-            taskbarWid.place_forget()
+            taskbarWid.lower()
 
     def toggle_tile_borders(self):
         if self.bordersBool.get():
@@ -781,6 +823,45 @@ class Debug(ctk.CTkFrame):
                     tile = tile[0]
                     if not tile.empty:
                         tile.file_label.configure(bg_color='transparent')
+
+    @staticmethod
+    def wipe_desktop():
+        sure = tk.messagebox.askokcancel(title='Are you sure?', message='This will delete all files from the desktop')
+
+        if sure:
+            os.chdir(f'{rootDir}\\Files\\Desktop')
+
+            for file in os.listdir(os.getcwd()):
+                directory = f'{os.getcwd()}\\{file}'
+                if os.path.isfile(file):
+                    os.remove(directory)
+                else:
+                    os.rmdir(directory)
+
+
+            os.chdir(f'{rootDir}\\System Info')
+            dict = {}
+            with open('files.json', 'w') as files:
+                json.dump(dict, files)
+            with open('start.json', 'w') as start:
+                json.dump(dict, start)
+
+            for row in desktop.tiles:
+                for tile in row:
+                    tile = tile[0]
+                    if not tile.empty:
+                        tile.icon.place_forget()
+                        tile.file_label.place_forget()
+                        tile.empty = True
+
+                        if tile.pinned:
+                            tile.pinned = False
+
+                            tile.pinnedShortcut.empty = True
+                            tile.pinnedShortcut.configure(text='Empty Shortcut')
+                            tile.pinnedShortcut.configure(state='disabled')
+
+
 debugMenu = Debug()
 
 
