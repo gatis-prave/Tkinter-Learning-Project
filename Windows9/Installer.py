@@ -49,7 +49,7 @@ class Installer(ctk.CTkFrame):
         # Title
         self.titleText = f'Thank you for choosing Windows 9\nWe promise it\'ll be much better than your useless {currentOS}'
         self.title = ctk.CTkLabel(master=self.widgetFrame, text=self.titleText, justify='center')
-        self.title.place(relx=0.5, rely=0.05, anchor='n')
+        self.title.place(relx=0.5, rely=0.01, anchor='n')
 
         # Editions
         self.editionsString = tk.StringVar(value='Choose edition')
@@ -61,18 +61,19 @@ class Installer(ctk.CTkFrame):
 
         # Username
         self.usernameLabel = ctk.CTkLabel(master=self.widgetFrame, text='Username:')
-        self.usernameLabel.place(relx=0.5, rely=0.30, anchor='n')
+        self.usernameLabel.place(relx=0.5, rely=0.33, anchor='n')
 
         self.usernameString = tk.StringVar()
         self.usernameEntry = ctk.CTkEntry(master=self.widgetFrame, textvariable=self.usernameString)
-        self.usernameEntry.place(relx=0.5, rely=0.37, anchor='n')
+        self.usernameEntry.place(relx=0.5, rely=0.42, anchor='n')
 
         # Light/Dark mode
         self.darkModeVar = tk.BooleanVar(value=False)
         self.ldModeSwitch = ctk.CTkSwitch(master=self,
                                           text='Dark Mode',
                                           variable=self.darkModeVar,
-                                          command=self.switch_ld_mode)
+                                          command=self.switch_ld_mode,
+                                          progress_color='RoyalBlue4')
 
         self.ldModeSwitch.place(relx=0.02, rely=0.98, anchor='sw')
 
@@ -84,14 +85,20 @@ class Installer(ctk.CTkFrame):
 
         self.installButton = ctk.CTkButton(master=self.buttonFrame,
                                            text='Install',
-                                           command=self.install_func)
+                                           command=self.install_func,
+                                           fg_color=('gray15', 'gray80'),
+                                           text_color=('gray80', 'gray15'),
+                                           hover_color=('gray30', 'gray50'))
 
         self.installButton.pack(side='right', padx=5)
 
         # Lazy button
         self.lazyButton = ctk.CTkButton(master=self.buttonFrame,
                                         text='I\'m lazy',
-                                        command=self.lazy_func)
+                                        command=self.lazy_func,
+                                        fg_color=('gray15', 'gray80'),
+                                        text_color=('gray80', 'gray15'),
+                                        hover_color=('gray30', 'gray50'))
         self.lazyButton.pack(side='right')
 
         # Error
@@ -190,21 +197,17 @@ class Installed(ctk.CTkFrame):
         self.label = ctk.CTkLabel(self, text='Windows 9 is already installed')
         self.label.place(relx=0.5, rely=0.1, anchor='n')
 
-        self.launchButton = ctk.CTkButton(self, text='Launch Windows 9', command=Installed.launch_windows)
-        self.launchButton.place(relx=0.5, rely=0.9, anchor='s')
-
-        self.repairButton = ctk.CTkButton(self, text='Repair Windows 9', command=Installed.repair_windows)
-        self.repairButton.place(relx=0.65, rely=0.9, anchor='s')
+        self.launchButton = ctk.CTkButton(self, text='Launch Windows 9', command=Installed.launch_windows,
+                                          fg_color=('gray15', 'gray80'),
+                                          text_color=('gray80', 'gray15'),
+                                          hover_color=('gray30', 'gray50'))
+        self.launchButton.place(relx=0.5, rely=0.9, anchor='n')
 
     @staticmethod
     def launch_windows():
         os.chdir(rootDir)
         window.destroy()
         call(["python", 'Desktop.py'])
-
-    @staticmethod
-    def repair_windows():
-        pass
 
 installedScreen = Installed()
 

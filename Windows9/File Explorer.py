@@ -1,5 +1,6 @@
 import os
 import json
+import shutil
 import tkinter as tk
 from tkinter import messagebox
 import customtkinter as ctk
@@ -45,26 +46,40 @@ window.title('File Explorer')
 winWidth = int(screenWidth * 0.3)
 winHeight = int(screenHeight * 0.3)
 window.geometry(f'{winWidth}x{winHeight}')
+window.resizable(False, False)
 
 class Menu(ctk.CTkFrame):
     def __init__(self):
         super().__init__(master=window)
         self.place(x=0, y=0, relwidth=1, relheight=0.15)
 
-        self.back = ctk.CTkButton(self, text='<-', command=self.go_back, state='disabled')
+        self.back = ctk.CTkButton(self, text='<-', command=self.go_back, state='disabled',
+                                  fg_color=('gray15', 'gray80'),
+                                  text_color=('gray80', 'gray15'),
+                                  hover_color=('gray30', 'gray50'))
         self.back.place(relx=0.01, rely=0.5, relwidth=0.05, relheight=0.5, anchor='w')
 
-        self.forward = ctk.CTkButton(self, text='->', command=self.go_forward, state='disabled')
+        self.forward = ctk.CTkButton(self, text='->', command=self.go_forward, state='disabled',
+                                     fg_color=('gray15', 'gray80'),
+                                     text_color=('gray80', 'gray15'),
+                                     hover_color=('gray30', 'gray50'))
         self.forward.place(relx=0.06, rely=0.5, relwidth=0.05, relheight=0.5, anchor='w')
 
-        self.up = ctk.CTkButton(self, text='^', command=self.go_up, state='disabled')
-        self.up.place(relx=0.12, rely=0.5, relwidth=0.05, relheight=0.5, anchor='w')
+        self.up = ctk.CTkButton(self, text='^', command=self.go_up, state='disabled',
+                                fg_color=('gray15', 'gray80'),
+                                text_color=('gray80', 'gray15'),
+                                hover_color=('gray30', 'gray50'))
+        self.up.place(relx=0.12, rely=0.5, relwidth=0.05, relheight=0.5, anchor='w',)
 
-        self.refresh = ctk.CTkButton(self, text='@', command=Menu.refresh)
+        self.refresh = ctk.CTkButton(self, text='@', command=Menu.refresh,
+                                     fg_color=('gray15', 'gray80'),
+                                     text_color=('gray80', 'gray15'),
+                                     hover_color=('gray30', 'gray50'))
         self.refresh.place(relx=0.18, rely=0.5, relwidth=0.05, relheight=0.5, anchor='w')
 
         self.directory = tk.StringVar(value=os.getcwd())
-        self.dirEntry = ctk.CTkEntry(self, textvariable=self.directory)
+        self.directoryDisplayed = tk.StringVar(value='Files\\')
+        self.dirEntry = ctk.CTkEntry(self, textvariable=self.directoryDisplayed, state='readonly')
         self.dirEntry.place(relx=0.25, rely=0.5, relwidth=0.7, relheight=0.3, anchor='w')
 
         self.dirHist = [f'{rootDir}\\Files']
@@ -80,6 +95,8 @@ class Menu(ctk.CTkFrame):
         menu.forward.configure(state='normal')
         if len(self.dirHist) > 1:
             self.directory.set(self.dirHist[-1])
+            dir_index = self.directory.get().find('Files')
+            self.directoryDisplayed.set(self.directory.get()[dir_index:])
             self.fwdDirs.append(os.getcwd())
             menu.forward.configure(state='normal')
             self.dirHist.remove(self.dirHist[-1])
@@ -89,6 +106,8 @@ class Menu(ctk.CTkFrame):
         elif len(self.dirHist) == 1 and not self.dirHist[0] == os.getcwd():
             menu.back.configure(state='disabled')
             self.directory.set(self.dirHist[-1])
+            dir_index = self.directory.get().find('Files')
+            self.directoryDisplayed.set(self.directory.get()[dir_index:])
             self.fwdDirs.append(os.getcwd())
 
             os.chdir(self.directory.get())
@@ -116,6 +135,8 @@ class Menu(ctk.CTkFrame):
         if len(self.fwdDirs) > 0:
             print('Fwd Dirs > 1')
             self.directory.set(self.fwdDirs[-1])
+            dir_index = self.directory.get().find('Files')
+            self.directoryDisplayed.set(self.directory.get()[dir_index:])
 
             if not os.getcwd() == menu.dirHist[-1]:
                 menu.dirHist.append(os.getcwd())
@@ -151,6 +172,8 @@ class Menu(ctk.CTkFrame):
                 menu.dirHist.append(os.getcwd())
 
             menu.directory.set(self.upDir)
+            dir_index = self.directory.get().find('Files')
+            self.directoryDisplayed.set(self.directory.get()[dir_index:])
             os.chdir(self.directory.get())
             Item.update_items()
 
@@ -182,7 +205,7 @@ class Directories(ctk.CTkFrame):
         self.qckAccLabel.place(relx=0.5, rely=0.01, anchor='n')
 
         self.qckAccFrame = ctk.CTkFrame(self)
-        self.qckAccFrame.place(relx=0.5, rely=0.08, relwidth=0.98, relheight=0.3, anchor='n')
+        self.qckAccFrame.place(relx=0.5, rely=0.1, relwidth=0.98, relheight=0.3, anchor='n')
 
 directories = Directories()
 
@@ -192,7 +215,9 @@ class QuickAccess(ctk.CTkButton):
                          text=name,
                          command=self.switch_directory,
                          anchor='w',
-                         fg_color='grey')
+                         fg_color=('gray15', 'gray80'),
+                         text_color=('gray80', 'gray15'),
+                         hover_color=('gray30', 'gray50'))
 
         self.name = name
         self.directory = f'{rootDir}\\Files\\{self.name}'
@@ -205,6 +230,8 @@ class QuickAccess(ctk.CTkButton):
             menu.dirHist.append(os.getcwd())
 
         menu.directory.set(self.directory)
+        dir_index = menu.directory.get().find('Files')
+        menu.directoryDisplayed.set(menu.directory.get()[dir_index:])
         os.chdir(self.directory)
 
         menu.update_up_dir()
@@ -230,7 +257,7 @@ class Main(ctk.CTkScrollableFrame):
 
     @classmethod
     def hide_entry(cls, event):
-        name_entry =main.entry.get()
+        name_entry = main.entry.get()
         extension = main.extension
         name_entry = name_entry.translate({ord(i): None for i in '*"/\\<>:|?.'})
         name_entry = name_entry.strip(' ')
@@ -271,9 +298,8 @@ class Main(ctk.CTkScrollableFrame):
             entry = main.entry.get().translate({ord(i): None for i in '*"/\\<>:|?.'})
             main.entry.delete(0, 'end')
             main.entry.insert(0, entry)
-
-            if len(main.entry.get()) > 16:
-                main.entry.delete(16, tk.END)
+            if len(main.entry.get()) > 24:
+                main.entry.delete(24, tk.END)
         else:
             os.chdir(menu.directory.get())
             if main.extension == '':
@@ -324,7 +350,7 @@ class Main(ctk.CTkScrollableFrame):
 
     @classmethod
     def create_file(cls, extension):
-        main.entry.pack(fill = 'x')
+        main.entry.pack(fill='x', pady=2, padx=12)
         main.entry_packed = True
         main.extension = extension
 
@@ -348,6 +374,7 @@ class Main(ctk.CTkScrollableFrame):
 
         Main.name_file()
 
+
 main = Main()
 
 class Item(ctk.CTkButton):
@@ -358,7 +385,7 @@ class Item(ctk.CTkButton):
                          anchor='w',
                          fg_color='grey')
 
-        self.pack(fill='x', pady=2, padx=4)
+        self.pack(fill='x', pady=2, padx=12)
 
         self.name = name
         self.directory = f'{os.getcwd()}\\{self.name}'
@@ -408,6 +435,9 @@ class Item(ctk.CTkButton):
             os.startfile(self.directory)
         else:
             menu.directory.set(self.directory)
+            dir_index = menu.directory.get().find('Files')
+            print(dir_index)
+            menu.directoryDisplayed.set(menu.directory.get()[dir_index:])
             os.chdir(self.directory)
 
             Item.update_items()
@@ -419,6 +449,39 @@ class Item(ctk.CTkButton):
         print('\nDirectory History:')
         for directory in menu.dirHist:
             print(directory)
+
+    @classmethod
+    def delete_file(cls):
+        widget = contextMenu.selected_widget
+
+        os.chdir(menu.directory.get())
+
+        file_name = widget.name
+        extension = widget.extension
+        path = widget.directory
+
+        if os.getcwd() == f'{rootDir}\\Files' and file_name == 'Desktop':
+            messagebox.showerror('Error', 'Can\'t delete Desktop')
+            raise Exception('Can\'t delete Desktop')
+
+        if extension == '':
+            if len(os.listdir(path)) == 0:
+                shutil.rmtree(path)
+            else:
+                sure = tk.messagebox.askokcancel(title='Folder not empty',
+                                                 message='This will delete the folder and all of its contents')
+                if sure:
+                    shutil.rmtree(path)
+                else:
+                    raise Exception('User not sure')
+        else:
+            os.remove(path)
+
+        if path in menu.fwdDirs:
+            menu.fwdDirs.remove(path)
+            menu.forward.configure(state='disabled')
+
+        Item.update_items()
 
 Item.update_items()
 
@@ -455,13 +518,9 @@ class ContextMenu(tk.Menu):
         self.delete(0, tk.END)
         self.newSubMenu.delete(0, tk.END)
         match self.widget_class:
-            case 'Directories':
-                self.add_command(label='Directories test')
-            case 'QuickAccess':
-                self.add_command(label='QuickAccess test')
             case 'Item':
-                self.add_command(label='Item test')
-            case 'NoneType': # Sometimes selects this instead of 'Main' class, don't know why
+                self.add_command(label='Delete', command=Item.delete_file)
+            case 'NoneType':  # Sometimes selects this instead of 'Main' class, don't know why
                 self.add_cascade(label='New', menu=self.newSubMenu)
                 self.newSubMenu.add_command(label='Folder', command=lambda: Main.create_file(''))
                 self.newSubMenu.add_separator()

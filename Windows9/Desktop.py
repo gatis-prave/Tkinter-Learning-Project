@@ -405,8 +405,11 @@ class Taskbar(ctk.CTkFrame):
         self.timeLabel.bind('<Activate>', self.update_time)
         self.update_time()
 
-        self.startButton = ctk.CTkButton(master=self, text='Start')
-        self.startButton.place(relx=0.005, rely=0.5, anchor='w', relwidth=0.04, relheight=0.7)
+        self.startButton = ctk.CTkButton(master=self, text='Start',
+                                         fg_color=('gray15', 'gray80'),
+                                         text_color=('gray80', 'gray15'),
+                                         hover_color=('gray30', 'gray50'))
+        self.startButton.place(relx=0.005, rely=0.5, anchor='w', relwidth=0.03, relheight=0.6)
 
     def update_time(self):
         time_string = strftime('%H:%M:%S')
@@ -427,16 +430,24 @@ class StartMenu(ctk.CTkFrame):
         self.startLabel = ctk.CTkLabel(master=self, text=self.starMenuText, anchor='center')
         self.startLabel.place(relx=0.02, rely=0.01)
 
-        self.itemContainer = ctk.CTkFrame(master=self)
-        self.itemContainer.place(x=0, rely=0.1, relwidth=1, relheight=0.75)
+        self.itemContainer = ctk.CTkFrame(master=self, fg_color='transparent')
+        self.itemContainer.place(relx=0.01, rely=0.1, relwidth=0.98, relheight=0.75)
 
         self.shutDownButton = ctk.CTkButton(master=self,
                                             text='Shut down',
-                                            command=lambda: window.destroy())
-        self.shutDownButton.place(relx=0.05, rely=0.95, relwidth=0.3, anchor='sw')
+                                            command=lambda: window.destroy(),
+                                            fg_color=('gray15', 'gray80'),
+                                            text_color=('gray80', 'gray15'),
+                                            hover_color=('gray30', 'gray50')
+                                            )
+        self.shutDownButton.place(relx=0.05, rely=0.96, relwidth=0.3, anchor='sw')
 
-        self.appsButton = ctk.CTkButton(master=self, text='Apps')
-        self.appsButton.place(relx=0.95, rely=0.95, relwidth=0.3, anchor='se')
+        self.appsButton = ctk.CTkButton(master=self, text='Apps',
+                                        fg_color=('gray15', 'gray80'),
+                                        text_color=('gray80', 'gray15'),
+                                        hover_color=('gray30', 'gray50')
+                                        )
+        self.appsButton.place(relx=0.95, rely=0.96, relwidth=0.3, anchor='se')
 
         self.lower()
 
@@ -463,8 +474,13 @@ class Shortcut(ctk.CTkButton):
                          text='Empty Shortcut',
                          command=self.open_shortcut,
                          state='disabled',
-                         anchor='w')
-        self.pack(expand=True, fill='both', padx=1, pady=1)
+                         anchor='w',
+                         fg_color=('gray15', 'gray80'),
+                         text_color=('gray80', 'gray15'),
+                         hover_color=('gray30', 'gray50'),
+                         text_color_disabled=('gray55', 'gray40')
+                         )
+        self.pack(expand=True, fill='both', padx=5, pady=2)
 
         self.name = f'StartItem{number}'
         self.empty = True
@@ -578,7 +594,7 @@ class Apps(ctk.CTkFrame):
         super().__init__(master=window, border_width=1)
         self.place(relx=0.2, rely=0.555, relwidth=0.175, relheight=0.4)
 
-        self.appsLabel = ctk.CTkLabel(master=self, text='Apps', anchor='center', fg_color='grey')
+        self.appsLabel = ctk.CTkLabel(master=self, text='All Applications', anchor='center')
         self.appsLabel.pack(pady=2)
 
         self.appItemContainer = ctk.CTkFrame(master=self)
@@ -602,9 +618,13 @@ startMenu.appsButton.configure(command=appMenu.toggle_app_menu)
 
 class AppButton(ctk.CTkButton):
     def __init__(self, app_name):
-        super().__init__(master=appMenu.appItemContainer, text=app_name, command=self.open_app)
+        super().__init__(master=appMenu.appItemContainer, text=app_name, command=self.open_app,
+                         fg_color=('gray15', 'gray80'),
+                         text_color=('gray80', 'gray15'),
+                         hover_color=('gray30', 'gray50')
+                         )
 
-        self.pack(pady=1)
+        self.pack(pady=2, padx=5, fill='x')
 
         self.fileName = f'{app_name}.py'
 
@@ -730,15 +750,21 @@ class Debug(ctk.CTkFrame):
         self.place(x=0, y=0)
         self.lower()
 
-        self.debug_button = ctk.CTkButton(master=taskbarWid, text='Debug Menu', command=self.toggle_menu)
-        self.debug_button.place(relx=0.05, rely=0.5, anchor='w', relwidth=0.06, relheight=0.7)
+        self.debug_button = ctk.CTkButton(master=taskbarWid, text='Debug Menu', command=self.toggle_menu,
+                                          fg_color=('gray15', 'gray80'),
+                                          text_color=('gray80', 'gray15'),
+                                          hover_color=('gray30', 'gray50')
+                                          )
+        self.debug_button.place(relx=0.04, rely=0.5, anchor='w', relwidth=0.06, relheight=0.6)
 
         self.fullscreenBool = tk.BooleanVar(value=True)
         self.fullscreenCheck = ctk.CTkCheckBox(
             master=self,
             text='Fullscreen',
             command=self.fullscreen_toggle,
-            variable=self.fullscreenBool)
+            variable=self.fullscreenBool,
+            fg_color=('gray65', 'gray25'),
+            hover_color=('gray30', 'gray50'))
         self.fullscreenCheck.pack(side='top', padx=5, pady=5)
 
         self.taskbarBool = tk.BooleanVar(value=True)
@@ -746,7 +772,9 @@ class Debug(ctk.CTkFrame):
             master=self,
             text='Taskbar',
             command=self.taskbar_toggle,
-            variable=self.taskbarBool)
+            variable=self.taskbarBool,
+            fg_color=('gray65', 'gray25'),
+            hover_color=('gray30', 'gray50'))
         self.taskbarCheck.pack(side='top', padx=5, pady=5)
 
         self.tileLabel = ctk.CTkLabel(self, text='Tile Options')
@@ -757,7 +785,9 @@ class Debug(ctk.CTkFrame):
             master=self,
             text='Tile Borders',
             command=self.toggle_tile_borders,
-            variable=self.bordersBool)
+            variable=self.bordersBool,
+            fg_color=('gray65', 'gray25'),
+            hover_color=('gray30', 'gray50'))
         self.bordersCheck.pack(side='top', padx=5, pady=5)
 
         self.labelsBool = tk.BooleanVar(value=False)
@@ -765,10 +795,16 @@ class Debug(ctk.CTkFrame):
             master=self,
             text='Label Background',
             command=self.toggle_label_background,
-            variable=self.labelsBool)
+            variable=self.labelsBool,
+            fg_color=('gray65', 'gray25'),
+            hover_color=('gray30', 'gray50'))
         self.labelsCheck.pack(side='top', padx=5, pady=5)
 
-        self.wipeDesktop = ctk.CTkButton(self, text='Wipe Desktop', command=Debug.wipe_desktop)
+        self.wipeDesktop = ctk.CTkButton(self, text='Wipe Desktop', command=Debug.wipe_desktop,
+                                         fg_color=('gray15', 'gray80'),
+                                         text_color=('gray80', 'gray15'),
+                                         hover_color=('gray30', 'gray50')
+                                         )
         self.wipeDesktop.pack(side='top', padx=5, pady=5)
 
     def toggle_menu(self):

@@ -41,29 +41,36 @@ os.chdir(rootDir)
 # Window Setup
 window = ctk.CTk()
 window.title('Settings')
-winWidth = int(screenWidth * 0.3)
-winHeight = int(screenHeight * 0.4)
+winWidth = int(screenWidth * 0.2)
+winHeight = int(screenHeight * 0.2)
 window.geometry(f'{winWidth}x{winHeight}')
+window.resizable(False, False)
 
 # Categories
 
-categoryFrame = ctk.CTkFrame(window)
+categoryFrame = ctk.CTkFrame(window, fg_color=('gray80', 'gray15'))
 categoryFrame.place(x=0, y=0, relwidth=0.3, relheight=1)
 
 class Category(ctk.CTkFrame):
     def __init__(self, name):
-        super().__init__(master=window, fg_color='black')
+        super().__init__(master=window)
         self.place(relx=0.3, rely=0, relwidth=0.7, relheight=1)
 
         self.name = name
 
-        self.label = ctk.CTkLabel(self, text=self.name)
-        self.label.pack()
+        self.label = ctk.CTkLabel(self, text=self.name,
+                                  fg_color=('gray15', 'gray80'),
+                                  text_color=('gray80', 'gray15'),
+                                  corner_radius=4)
+        self.label.pack(pady=4)
 
         self.button = ctk.CTkButton(master=categoryFrame,
                                     command=self.switch_categories,
-                                    text=self.name)
-        self.button.pack(pady=2, padx=1, fill='x')
+                                    text=self.name,
+                                    fg_color=('gray15', 'gray80'),
+                                    text_color=('gray80', 'gray15'),
+                                    hover_color=('gray30', 'gray50'))
+        self.button.pack(pady=3, padx=2, fill='x')
 
     def switch_categories(self):
         self.lift()
@@ -71,17 +78,18 @@ class Category(ctk.CTkFrame):
 system = Category('System')
 display = Category('Display')
 users = Category('Users')
+applications = Category('Applications')
+accessibility = Category('Accessibility')
 
 system.lift()
-
 
 # Settings
 class Options(ctk.CTkFrame):
     def __init__(self, name, variable, category, set_type):
-        super().__init__(master=category)
-        self.pack(fill='both')
+        super().__init__(master=category, fg_color=('gray15', 'gray80'))
+        self.pack(fill='both', pady=2)
 
-        self.label = ctk.CTkLabel(self, text=name)
+        self.label = ctk.CTkLabel(self, text=name, text_color=('gray80', 'gray15'))
         self.label.pack(side='left', padx=5)
 
         self.type = set_type
@@ -89,12 +97,15 @@ class Options(ctk.CTkFrame):
         match self.type:
             case 'switch':
                 self.variable = tk.BooleanVar(value=variable)
-                self.switch = ctk.CTkSwitch(self, variable=self.variable)
+                self.switch = ctk.CTkSwitch(self, variable=self.variable, text='',
+                                            progress_color='RoyalBlue4')
                 self.switch.pack(side='right')
             case 'entry':
                 self.variable = tk.StringVar(value=variable)
-                self.entry = ctk.CTkEntry(self, textvariable=self.variable)
-                self.entry.pack(side='right')
+                self.entry = ctk.CTkEntry(self, textvariable=self.variable,
+                                          fg_color=('gray15', 'gray80'),
+                                          text_color=('gray80', 'gray15'))
+                self.entry.pack(side='right', pady=1, padx=2)
 
 
 darkModeSet = Options('Dark Mode', darkMode, display, 'switch')
@@ -117,8 +128,11 @@ def save_settings():
 
     os.chdir(rootDir)
 
-saveButton = ctk.CTkButton(categoryFrame, text='Save', command=save_settings)
-saveButton.pack(side='bottom', pady=2)
+saveButton = ctk.CTkButton(categoryFrame, text='Save', command=save_settings,
+                           fg_color=('gray15', 'gray80'),
+                           text_color=('gray80', 'gray15'),
+                           hover_color=('gray30', 'gray50'))
+saveButton.pack(side='bottom', pady=4)
 
 
 window.mainloop()
